@@ -34,7 +34,7 @@ public class BuilderListener implements Listener {
 
 		}
 
-		plugin.getLogger().info("nav complete " + npc);
+	//	plugin.getLogger().info("nav complete " + npc);
 
 		BuilderTrait inst = plugin.getBuilder(npc);
 
@@ -56,7 +56,7 @@ public class BuilderListener implements Listener {
 		}
 		BuilderTrait inst = plugin.getBuilder(npc);
 
-		plugin.getLogger().info("nav cancel " + npc);
+	//	plugin.getLogger().info("nav cancel " + npc);
 
 		if(inst==null) return;
 

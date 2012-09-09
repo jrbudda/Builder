@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 import org.bukkit.material.MaterialData;
 import org.bukkit.util.Vector;
 import org.jnbt.ByteArrayTag;

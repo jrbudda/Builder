@@ -2,6 +2,7 @@ package net.jrbudda.builder;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.util.Vector;
 
@@ -110,12 +111,15 @@ public class BuilderTrait extends Trait implements Toggleable {
 	public BuilderSchematic Schematic = null;
 	Packet anim = null;
 
+	public boolean IgnoreAir = true;
+	public boolean IgnoreLiquid = true;
+
 	public boolean StartBuild(){
 		if(!npc.isSpawned()) return false;
 		if (Schematic == null) return false;
 		if (this.State != BuilderState.idle) return false;
 
-		Schematic.Reset(npc);
+		Schematic.Reset(npc, IgnoreLiquid, IgnoreAir);
 
 		this.State = BuilderState.building;
 
@@ -125,19 +129,32 @@ public class BuilderTrait extends Trait implements Toggleable {
 	}
 
 	private BuildBlock next = null;
+	private Block pending = null;
 
 	public void SetupNextBlock(){
 		if(Schematic ==null) {
 			CancelBuild();
 			return;
 		}
-		next = Schematic.getNext();
-		if (next == null) CancelBuild();	
+
+		do{
+			next = Schematic.getNext();
+
+			if (next == null) {
+				CancelBuild();
+				return;
+			}
+
+			pending = this.npc.getBukkitEntity().getWorld().getBlockAt(next.loc);
+
+			//dont bother putting a block that already exists.
+		} while ((pending.getTypeId() == next.mat.getItemTypeId() && pending.getData() == next.mat.getData()));
+
 
 		canceltaskid=	plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 			public void run() {
 				if(npc.getNavigator().isNavigating()){
-					npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation().add(0, 1, 0));
+					npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation().add(0, 0, 1));
 					npc.getNavigator().cancelNavigation();
 				}
 			}
@@ -146,7 +163,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 			public void run() {
 				npc.getNavigator().setTarget(findaspot(next));
-				npc.getNavigator().getLocalParameters().stationaryTicks(20);
+				npc.getNavigator().getLocalParameters().stationaryTicks(40);
 				npc.getNavigator().getLocalParameters().stuckAction(BuilderTeleportStuckAction.INSTANCE);
 			}
 		}, 1);
@@ -166,9 +183,10 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	public void PlaceNextBlock(){
 
+		if(canceltaskid > 0) plugin.getServer().getScheduler().cancelTask((int) canceltaskid);
+
 		//change block
-		org.bukkit.block.Block block = this.npc.getBukkitEntity().getWorld().getBlockAt(next.loc);
-		block.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
+		pending.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
 
 		//arm swing
 		net.citizensnpcs.util.Util.sendPacketNearby(npc.getBukkitEntity().getLocation(),anim , 64);
@@ -181,8 +199,13 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	//Given a BuildBlock to place, find a good place to stand to plave it.
 	private Location findaspot(BuildBlock block){
+		if(block ==null || block.loc == null) return null;
 
-		return block.loc.add(0,0,1);
+		if(!block.loc.clone().add(0,-1,1).getBlock().isEmpty()) return block.loc.clone().add(0,0,1) ;
+		if(!block.loc.clone().add(0,-1,-1).getBlock().isEmpty()) return block.loc.clone().add(0,0,-1) ;
+		if(!block.loc.clone().add(1,-1,0).getBlock().isEmpty()) return block.loc.clone().add(1,0,0) ;
+		if(!block.loc.clone().add(1,-1,1).getBlock().isEmpty()) return block.loc.clone().add(1,0,1) ;
+		return block.loc.clone();
 
 		//		Location loco =  npc.getBukkitEntity().getLocation();
 		//		Vector norman = loco.subtract(block.getLocation()).toVector();

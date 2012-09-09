@@ -27,7 +27,7 @@ public class BuilderSchematic {
 	public Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
 
 
-	public void Reset(NPC Builder){
+	public void Reset(NPC Builder, boolean ignoreLiquids, boolean ignoreAir){
 		i=0;
 		j=0;
 		k=0;
@@ -67,11 +67,16 @@ public class BuilderSchematic {
 			}
 
 			BuildBlock b = new BuildBlock();
-			b.loc = Builder.getBukkitEntity().getLocation().add(i - this.width()/2,j-yoffset, k - this.length()/2);
+			b.loc = Builder.getBukkitEntity().getLocation().clone().add(i - this.width()/2,j-yoffset, k - this.length()/2);
 			b.mat = this.Blocks[i][j+yoffset][k];
 
 			switch (b.mat.getItemTypeId()) {
-			case 8:	case 9:	case 10:	case 11:	case 50:	case 75:	case 76:	case 321:	case 69: 	case 131: 	case 77: 	case 389:
+			case 0:
+				if(!ignoreAir) Q.add(b);
+				break;
+			case 8:	case 9:	case 10:	case 11:
+				if (!ignoreLiquids) deferr.add(b);
+			case 50:	case 75:	case 76:	case 321:	case 69: 	case 131: 	case 77: 	case 389:
 				deferr.add(b);
 				break;
 			default:
