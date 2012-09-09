@@ -15,9 +15,7 @@ public class BuilderSchematic {
 
 	public String Name = ""; 
 
-	private int i,j,k = 0;
-	private int di,dk = 1;
-	private int yoffset = 0;
+
 
 	public class BuildBlock{
 		public MaterialData mat;
@@ -27,12 +25,36 @@ public class BuilderSchematic {
 	public Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
 
 
+	public void CreateMarks(NPC Builder){
+		Q.clear();
+		
+		BuildBlock a = new BuildBlock();
+		a.loc = Builder.getBukkitEntity().getLocation().clone().add(-this.width()/2,0, -this.length()/2);
+		a.mat = new MaterialData(50);
+		Q.add(a);
+		BuildBlock b = new BuildBlock();
+		b.loc = Builder.getBukkitEntity().getLocation().clone().add(this.width()/2,0, -this.length()/2);
+		b.mat = new MaterialData(50);
+		Q.add(b);
+		BuildBlock c = new BuildBlock();
+		c.loc = Builder.getBukkitEntity().getLocation().clone().add(-this.width()/2,0, this.length()/2);
+		c.mat = new MaterialData(50);
+		Q.add(c);
+		BuildBlock d = new BuildBlock();
+		d.loc = Builder.getBukkitEntity().getLocation().clone().add(this.width()/2,0, this.length()/2);
+		d.mat = new MaterialData(50);
+		Q.add(d);
+	}
+
 	public void Reset(NPC Builder, boolean ignoreLiquids, boolean ignoreAir){
-		i=0;
-		j=0;
-		k=0;
-		di=1;
-		dk=1;	
+
+		int i = 0;
+		int j = 0;
+		int k = 0;
+		int di = 1;
+		int dk = 1;
+		int yoffset = 0;
+		Q.clear();
 
 		//clear out empty planes on the bottom.
 		boolean ok =false;

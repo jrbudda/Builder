@@ -5,6 +5,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
+import net.jrbudda.builder.BuilderTrait.BuilderState;
 
 
 public class BuilderListener implements Listener {
@@ -40,7 +41,7 @@ public class BuilderListener implements Listener {
 
 		if(inst==null) return;
 
-		if(inst.State == net.jrbudda.builder.BuilderTrait.BuilderState.building )inst.PlaceNextBlock();
+		if(inst.State!=BuilderState.idle)inst.PlaceNextBlock();
 
 	}
 
@@ -60,7 +61,7 @@ public class BuilderListener implements Listener {
 
 		if(inst==null) return;
 
-		if(inst.State == net.jrbudda.builder.BuilderTrait.BuilderState.building )inst.PlaceNextBlock();
+		if(inst.State!=BuilderState.idle)inst.PlaceNextBlock();
 
 	}
 

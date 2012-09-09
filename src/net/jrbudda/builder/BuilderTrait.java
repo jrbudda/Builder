@@ -105,14 +105,14 @@ public class BuilderTrait extends Trait implements Toggleable {
 		return isToggled;
 	}
 
-	public enum BuilderState {idle, building};
+	public enum BuilderState {idle, building, marking};
 
 	public BuilderState State = BuilderState.idle;
 	public BuilderSchematic Schematic = null;
 	Packet anim = null;
 
 	public boolean IgnoreAir = true;
-	public boolean IgnoreLiquid = true;
+	public boolean IgnoreLiquid = false;
 
 	public boolean StartBuild(){
 		if(!npc.isSpawned()) return false;
@@ -127,6 +127,31 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		return true;
 	}
+
+	private BuilderSchematic _schematic = null;
+
+	private Location mypos = null;
+
+	public boolean StartMark(){
+		if(!npc.isSpawned()) return false;
+		if (Schematic == null) return false;
+		if (this.State != BuilderState.idle) return false;
+
+		_schematic = Schematic;
+		
+		mypos = npc.getBukkitEntity().getLocation();
+		
+		Schematic = new BuilderSchematic(_schematic.width(), _schematic.height(), _schematic.length());
+
+		Schematic.CreateMarks(this.npc);
+
+		this.State = BuilderState.marking;
+
+		SetupNextBlock();
+
+		return true;
+	}
+
 
 	private BuildBlock next = null;
 	private Block pending = null;
@@ -154,7 +179,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		canceltaskid=	plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 			public void run() {
 				if(npc.getNavigator().isNavigating()){
-					npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation().add(0, 0, 1));
+					npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation().clone().add(0, 1, 0));
 					npc.getNavigator().cancelNavigation();
 				}
 			}
@@ -172,11 +197,20 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 
 	public void CancelBuild(){
+		
+		if (this.State ==BuilderState.marking){
+			npc.getNavigator().setTarget(mypos);
+			Schematic = _schematic;
+		}
+		else{
+			if (npc.isSpawned() && npc.getNavigator().isNavigating()){
+				npc.getNavigator().cancelNavigation();
+			}
+		}
+			
 		this.State =BuilderState.idle;
 		if(canceltaskid > 0) plugin.getServer().getScheduler().cancelTask((int) canceltaskid);
-		if (npc.isSpawned() && npc.getNavigator().isNavigating()){
-			npc.getNavigator().cancelNavigation();
-		}
+
 	}
 
 	private long canceltaskid;
@@ -200,12 +234,28 @@ public class BuilderTrait extends Trait implements Toggleable {
 	//Given a BuildBlock to place, find a good place to stand to plave it.
 	private Location findaspot(BuildBlock block){
 		if(block ==null || block.loc == null) return null;
+  
+		Block base = block.loc.getWorld().getBlockAt(block.loc);
 
-		if(!block.loc.clone().add(0,-1,1).getBlock().isEmpty()) return block.loc.clone().add(0,0,1) ;
-		if(!block.loc.clone().add(0,-1,-1).getBlock().isEmpty()) return block.loc.clone().add(0,0,-1) ;
-		if(!block.loc.clone().add(1,-1,0).getBlock().isEmpty()) return block.loc.clone().add(1,0,0) ;
-		if(!block.loc.clone().add(1,-1,1).getBlock().isEmpty()) return block.loc.clone().add(1,0,1) ;
-		return block.loc.clone();
+		for (int a=2; a>=-3;a--){
+			if(base.getRelative(0, a, 1).isEmpty() == false && base.getRelative(0, a+1, 1).isEmpty() == true) return base.getRelative(0, a, 1).getLocation(); 
+		}
+
+		for (int a=2; a>=-3;a--){
+			if(base.getRelative(0, a, -1).isEmpty() == false && base.getRelative(0, a+1, -1).isEmpty() == true) return base.getRelative(0, a, -1).getLocation(); 
+		}
+
+		for (int a=2; a>=-3;a--){
+			if(base.getRelative(1, a,0).isEmpty() == false && base.getRelative(1, a+1,0).isEmpty() == true) return base.getRelative(1, a,0).getLocation(); 
+		}
+
+		for (int a=2; a>=-3;a--){
+			if(base.getRelative(-1, a,0).isEmpty() == false && base.getRelative(-1, a+1,0).isEmpty() == true) return base.getRelative(-1, a,0).getLocation(); 
+		}
+
+
+		return npc.getBukkitEntity().getLocation();
+
 
 		//		Location loco =  npc.getBukkitEntity().getLocation();
 		//		Vector norman = loco.subtract(block.getLocation()).toVector();
