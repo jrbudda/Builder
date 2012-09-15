@@ -1,9 +1,11 @@
 name: Builder
 author: jrbudda
-version: 0.1
+version: 0.3.3
 main: net.jrbudda.builder.Builder
 depend:
   - Citizens
+softdepend:
+  - Denizen
 commands:
   builder:
     description: Lists builder commands.
@@ -14,4 +16,11 @@ permissions:
     children:
       builder.load: true
       builder.cancel: true
-      builder.build.*: true
+      builder.build: true
+      builder.mark: true
+      builder.origin: true
+      builder.ignoreair: true
+      builder.ignoreliquid: true
+      builder.check: true
+      builder.compare: true
+      builder.info: true

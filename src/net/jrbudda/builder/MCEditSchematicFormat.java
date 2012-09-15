@@ -4,29 +4,33 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+
 import java.util.Map;
+
+import net.citizensnpcs.api.jnbt.ByteArrayTag;
+import net.citizensnpcs.api.jnbt.CompoundTag;
+import net.citizensnpcs.api.jnbt.IntTag;
+import net.citizensnpcs.api.jnbt.NBTInputStream;
+import net.citizensnpcs.api.jnbt.ShortTag;
+import net.citizensnpcs.api.jnbt.StringTag;
+import net.citizensnpcs.api.jnbt.Tag;
+
 import org.bukkit.material.MaterialData;
 import org.bukkit.util.Vector;
-import org.jnbt.ByteArrayTag;
-import org.jnbt.CompoundTag;
-import org.jnbt.IntTag;
-import org.jnbt.NBTInputStream;
-import org.jnbt.ShortTag;
-import org.jnbt.StringTag;
-import org.jnbt.Tag;
+
 
 
 public class MCEditSchematicFormat {
 	private static final int MAX_SIZE = Short.MAX_VALUE - Short.MIN_VALUE;
 
-	public static  BuilderSchematic load(String filename) throws IOException, Exception {
+	public static  BuilderSchematic load(File path, String filename) throws IOException, Exception {
 
-			File file = new File(filename);
-		
-		if(!file.exists()) throw(new Exception("File not found"));
+		File file = new File(path,filename+".schematic");
+
+		if(!file.exists()) throw(new java.io.FileNotFoundException("File not found"));
 
 		FileInputStream stream = new FileInputStream(file);
-		NBTInputStream nbtStream = new NBTInputStream(stream);
+		NBTInputStream nbtStream = new NBTInputStream(new java.util.zip.GZIPInputStream(stream));
 
 		Vector origin = new Vector();
 		Vector offset = new Vector();
@@ -34,13 +38,14 @@ public class MCEditSchematicFormat {
 		// Schematic tag
 		CompoundTag schematicTag = (CompoundTag) nbtStream.readTag();
 		nbtStream.close();
-				
+
 		if (!schematicTag.getName().equals("Schematic")) {
 			throw new Exception("Tag \"Schematic\" does not exist or is not first");
 		}
 
 		// Check
 		Map<String, Tag> schematic = schematicTag.getValue();
+
 		if (!schematic.containsKey("Blocks")) {
 			throw new Exception("Schematic file is missing a \"Blocks\" tag");
 		}
@@ -93,45 +98,44 @@ public class MCEditSchematicFormat {
 			}
 		}
 
-		//        // Need to pull out tile entities
-		//        List<Tag> tileEntities = getChildTag(schematic, "TileEntities", ListTag.class)
-		//                .getValue();
-		//        Map<BlockVector, Map<String, Tag>> tileEntitiesMap =
-		//                new HashMap<BlockVector, Map<String, Tag>>();
+		//		// Need to pull out tile entities
+		//		List<Tag> tileEntities = getChildTag(schematic, "TileEntities", ListTag.class).getValue();
+		//		Map<Vector, Map<String, Tag>> tileEntitiesMap =
+		//				new HashMap<Vector, Map<String, Tag>>();
 		//
-		//        for (Tag tag : tileEntities) {
-		//            if (!(tag instanceof CompoundTag)) continue;
-		//            CompoundTag t = (CompoundTag) tag;
+		//		for (Tag tag : tileEntities) {
+		//			if (!(tag instanceof CompoundTag)) continue;
+		//			CompoundTag t = (CompoundTag) tag;
 		//
-		//            int x = 0;
-		//            int y = 0;
-		//            int z = 0;
+		//			int x = 0;
+		//			int y = 0;
+		//			int z = 0;
 		//
-		//            Map<String, Tag> values = new HashMap<String, Tag>();
+		//			Map<String, Tag> values = new HashMap<String, Tag>();
 		//
-		//            for (Map.Entry<String, Tag> entry : t.getValue().entrySet()) {
-		//                if (entry.getKey().equals("x")) {
-		//                    if (entry.getValue() instanceof IntTag) {
-		//                        x = ((IntTag) entry.getValue()).getValue();
-		//                    }
-		//                } else if (entry.getKey().equals("y")) {
-		//                    if (entry.getValue() instanceof IntTag) {
-		//                        y = ((IntTag) entry.getValue()).getValue();
-		//                    }
-		//                } else if (entry.getKey().equals("z")) {
-		//                    if (entry.getValue() instanceof IntTag) {
-		//                        z = ((IntTag) entry.getValue()).getValue();
-		//                    }
-		//                }
+		//			for (Map.Entry<String, Tag> entry : t.getValue().entrySet()) {
+		//				if (entry.getKey().equals("x")) {
+		//					if (entry.getValue() instanceof IntTag) {
+		//						x = ((IntTag) entry.getValue()).getValue();
+		//					}
+		//				} else if (entry.getKey().equals("y")) {
+		//					if (entry.getValue() instanceof IntTag) {
+		//						y = ((IntTag) entry.getValue()).getValue();
+		//					}
+		//				} else if (entry.getKey().equals("z")) {
+		//					if (entry.getValue() instanceof IntTag) {
+		//						z = ((IntTag) entry.getValue()).getValue();
+		//					}
+		//				}
 		//
-		//                values.put(entry.getKey(), entry.getValue());
-		//            }
+		//				values.put(entry.getKey(), entry.getValue());
+		//			}
 		//
-		//            BlockVector vec = new BlockVector(x, y, z);
-		//            tileEntitiesMap.put(vec, values);
-		//        }
+		//			Vector vec = new Vector(x, y, z);
+		//			tileEntitiesMap.put(vec, values);
+		//		}
 
-		Vector size = new Vector(width, height, length);
+		//	Vector size = new Vector(width, height, length);
 
 		//        clipboard.setOrigin(origin);
 		//        clipboard.setOffset(offset);
@@ -142,20 +146,25 @@ public class MCEditSchematicFormat {
 			for (int y = 0; y < height; ++y) {
 				for (int z = 0; z < length; ++z) {
 					int index = y * width * length + z * width + x;
-					Vector pt = new Vector(x, y, z);
+					//Vector pt = new Vector(x, y, z);
 
-					MaterialData M = new MaterialData(blocks[index], blockData[index]);
+					BuildBlock M = new BuildBlock();
+					M.mat  = new MaterialData(blocks[index], blockData[index]);
+						M.X = x;
+						M.Y = y;
+						M.Z = z;
 					out.Blocks[x][y][z] = M;
 
-					//                    if (block instanceof TileEntityBlock && tileEntitiesMap.containsKey(pt)) {
-					//                        ((TileEntityBlock) block).setNbtData(new CompoundTag("", tileEntitiesMap.get(pt)));
-					//                    }
+					//					if (block instanceof TileEntityBlock && tileEntitiesMap.containsKey(pt)) {
+					//						((TileEntityBlock) block).setNbtData(new CompoundTag("", tileEntitiesMap.get(pt)));
+					//					}
 
 
 				}
 			}
 		}
 		out.Name = filename;
+		out.SchematicOrigin = origin;
 		return out;
 	}
 
