@@ -9,8 +9,8 @@ public class Util {
 	{
 		int i, k = 0, l = 0;
 
-		int n = a.length;
-		int m = a[0].length;
+		int m = a.length;
+		int n = a[0][0].length;
 
 		List<BuildBlock> out = new ArrayList<BuildBlock>();
 
@@ -59,7 +59,7 @@ public class Util {
 		}
 
 		java.util.Collections.reverse(out);
-		
+
 		return out;
 	}
 
@@ -71,8 +71,8 @@ public class Util {
 		int di = 1;
 		int dk=1;
 
-		int n = a.length;
-		int m = a[0].length;
+		int m = a.length;
+		int n = a[0][0].length;
 
 		List<BuildBlock> out = new ArrayList<BuildBlock>();
 
@@ -86,23 +86,18 @@ public class Util {
 		do{
 
 			out.add(a[i][y][k]);
-
 			i+=di;
-			if(i >=n || i < 0) {
+			if(i >=m || i < 0) {
 				di*=-1;
 				i+=di;
 				k+=dk;
-				if (k >= m||k<0) {
-					dk*=-1;
-					k +=dk;		
-
+				if (k >= n||k<0) {
+					k +=1;		
 					if(k>=n) break;
-
-
 				}		
 			}
 
-	
+
 		}while(true);
 
 		return out;

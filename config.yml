@@ -17,9 +17,3 @@ DefaultTexts:
  BuildCanceled: <NPC>'s build of <SCHEMATIC> has been canceled!
  Mark: <NPC> is marking the corners of <SCHEMATIC>
  
-#Default Options for builders
-DefaultOptions:
-  #Specifies if the builder should hold the next block to be placed before he places it. Turn off only for compaibility with other plugins.
-  HoldItems: true
-  #The builder order, per vertical layer. The options are: linear (east-west), spiral (outside-in), reversespiral (inside-out)
-  BuildOrder: reversespiral

@@ -18,6 +18,7 @@ import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
+import org.dynmap.DynmapCommonAPI;
 
 import net.citizensnpcs.api.exception.NPCLoadException;
 
@@ -67,6 +68,13 @@ public class BuilderTrait extends Trait implements Toggleable {
 		State = BuilderState.valueOf(key.getString("State","idle"));
 		oncancel = key.getString("oncancel",null);
 		oncomplete = key.getString("oncomplete",null);
+		HoldItems = key.getBoolean("HoldItems", true);
+		try {
+			BuildPatternXY = BuildPatternsXZ.valueOf( key.getString("PatternXY","spiral"));	
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+
 
 		if (SchematicName !=null){
 			File dir= new File(plugin.schematicsFolder);
@@ -91,7 +99,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		plugin = (Builder) Bukkit.getPluginManager().getPlugin("Builder");
 
-		plugin.getLogger().info("Builder Spawn: " + npc.getName());
+		//plugin.getLogger().info("Builder Spawn: " + npc.getName());
 
 
 		if (this.loaded ==false ) {
@@ -109,20 +117,16 @@ public class BuilderTrait extends Trait implements Toggleable {
 			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 				public void run() {
 					State = BuilderState.idle;
-					StartBuild(plugin.getServer().getConsoleSender(),IgnoreAir, IgnoreLiquid, Excavate);
+					StartBuild(plugin.getServer().getConsoleSender());
 				}
 			}, 20);
 		}
 		else State = BuilderState.idle;
-
-
 	}
 
 	@Override
 	public void onRemove() {
-
 		this.State = BuilderState.idle;
-
 	}
 
 
@@ -133,6 +137,8 @@ public class BuilderTrait extends Trait implements Toggleable {
 		key.setBoolean("IgnoreLiquid",IgnoreLiquid);
 		key.setBoolean("Excavate",Excavate);
 		key.setString("State", State.toString());
+		key.setString("PatternXY",BuildPatternXY.toString());
+		key.setBoolean("HoldItems", HoldItems);
 		if(oncancel!=null) key.setString("oncancel", oncancel);
 		if(oncomplete!=null) key.setString("oncomplete",oncomplete);
 
@@ -178,9 +184,13 @@ public class BuilderTrait extends Trait implements Toggleable {
 	public Location ContinueLoc = null;
 	public String oncomplete = null;
 	public String oncancel = null;
+	public Boolean HoldItems = true;
+	public BuildPatternsXZ BuildPatternXY = BuildPatternsXZ.spiral;
+
 
 	Packet anim = null;
 	public enum BuilderState {idle, building, marking};
+	public enum BuildPatternsXZ {spiral, reversespiral, linear, reverselinear};
 	private boolean clearingMarks = false;
 
 	public String GetMatsList(){
@@ -239,7 +249,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 	}
 
 
-	public boolean StartBuild(CommandSender player, boolean air, boolean liquid, boolean excavate){
+	public boolean StartBuild(CommandSender player){
 		if(!npc.isSpawned()) return false;
 		if (schematic == null) return false;
 		if (this.State != BuilderState.idle) return false;
@@ -250,13 +260,9 @@ public class BuilderTrait extends Trait implements Toggleable {
 		else if (ContinueLoc!=null) start = ContinueLoc.clone();
 		else start = npc.getBukkitEntity().getLocation().clone();
 
-		schematic.Reset(start, liquid, air,excavate);
+		schematic.Reset(start, IgnoreLiquid, IgnoreAir,Excavate, this.BuildPatternXY);
 
 		ContinueLoc = start.clone();
-
-		IgnoreAir  = air;
-		IgnoreLiquid = liquid;
-		Excavate = excavate;
 
 		mypos = npc.getBukkitEntity().getLocation().clone();
 
@@ -288,6 +294,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		schematic = new BuilderSchematic();
 		schematic.Name = _schematic.Name;
+
 		if (Origin==null){
 			schematic.CreateMarks(this.npc.getBukkitEntity().getLocation(),_schematic.width(), _schematic.height(), _schematic.length(), mat);
 		}
@@ -337,7 +344,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 					return;
 				}
 
-				pending = this.npc.getBukkitEntity().getWorld().getBlockAt(next.X,next.Y,next.Z);
+				pending = schematic.Origin.getWorld().getBlockAt(schematic.offset(next).toLocation(schematic.Origin.getWorld()));
 
 				//dont replace grass with dirt, and vice versa.
 				if (pending.getTypeId() == 3 && next.mat.getItemTypeId() ==2) continue;
@@ -350,15 +357,19 @@ public class BuilderTrait extends Trait implements Toggleable {
 		else{
 			clearingMarks = true;
 			next = marks.remove();
-			pending = this.npc.getBukkitEntity().getWorld().getBlockAt(next.X,next.Y,next.Z);
+			pending = schematic.Origin.getWorld().getBlockAt(next.X, next.Y, next.Z);
+
 		}
 
 
-		if(npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity && plugin.HoldItems){
-			int m = next.mat.getItemTypeId();
-			if (m <=0) m = 278;
-			((org.bukkit.entity.Player) npc.getBukkitEntity()).getInventory().setItemInHand(new ItemStack(m));
+		if(npc.isSpawned()){
+			if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity || npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems){
+				int m = next.mat.getItemTypeId();
+				if (m <=0) m = 278;
 
+				if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getBukkitEntity()).getInventory().setItemInHand(new ItemStack(m));	
+				else if((npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems)	((org.bukkit.entity.Enderman) npc.getBukkitEntity()).setCarriedMaterial(new MaterialData(m));
+			}
 		}
 
 
@@ -373,7 +384,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 			public void run() {
-				npc.getNavigator().setTarget(findaspot(next));
+				npc.getNavigator().setTarget(findaspot(pending));
 				npc.getNavigator().getLocalParameters().stationaryTicks(40);
 				npc.getNavigator().getLocalParameters().stuckAction(BuilderTeleportStuckAction.INSTANCE);
 			}
@@ -425,6 +436,18 @@ public class BuilderTrait extends Trait implements Toggleable {
 		oncomplete = null;
 		oncancel = null;
 		ContinueLoc = null;
+
+		if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getBukkitEntity()).getInventory().setItemInHand(new ItemStack(0));	
+		else if((npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems)	((org.bukkit.entity.Enderman) npc.getBukkitEntity()).setCarriedMaterial(new MaterialData(0));
+
+		if (stop && plugin.getServer().getPluginManager().getPlugin("dynmap") != null){
+			if (plugin.getServer().getPluginManager().getPlugin("dynmap").isEnabled()) {
+				org.dynmap.DynmapCommonAPI dyn  = (DynmapCommonAPI) (plugin.getServer().getPluginManager().getPlugin("dynmap"));
+				dyn.triggerRenderOfVolume(npc.getBukkitEntity().getWorld().getName(), schematic.Origin.getBlockX() - schematic.width()/2, schematic.Origin.getBlockY(), schematic.Origin.getBlockZ() - schematic.length()/2, schematic.Origin.getBlockX() + schematic.width()/2, schematic.Origin.getBlockY() + schematic.height()/2, schematic.Origin.getBlockZ() + schematic.length()/2);
+			}
+		}
+
+
 	}
 
 	private long canceltaskid;
@@ -447,8 +470,9 @@ public class BuilderTrait extends Trait implements Toggleable {
 			//change block
 			pending.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
 
+
 			//arm swing
-			net.citizensnpcs.util.Util.sendPacketNearby(npc.getBukkitEntity().getLocation(),anim , 64);
+			if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity)	net.citizensnpcs.util.Util.sendPacketNearby(npc.getBukkitEntity().getLocation(),anim , 64);	
 		}
 
 		if (marks.size()==0) clearingMarks = false;
@@ -460,10 +484,8 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	//TODO: make this less... awful.
 	//Given a BuildBlock to place, find a good place to stand to place it.
-	private Location findaspot(BuildBlock block){
-		if(block ==null ) return null;
-
-		Block base = npc.getBukkitEntity().getLocation().getWorld().getBlockAt(block.X, block.Y, block.Z);
+	private Location findaspot(Block base){
+		if(base ==null ) return null;
 
 		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(0, a, -1))) return  base.getRelative(0, a-1, -1).getLocation();

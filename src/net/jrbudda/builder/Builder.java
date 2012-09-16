@@ -35,8 +35,6 @@ public class Builder extends JavaPlugin {
 	public String  CompleteMessage = "";
 	public String  CancelMessage = "";
 	public String  MarkMessage = "";
-	public boolean HoldItems = true;
-
 
 	@Override
 	public void onEnable() {
@@ -105,8 +103,6 @@ public class Builder extends JavaPlugin {
 		return null;
 	}
 	//
-
-
 
 	@Override
 	public void onDisable() {
@@ -258,8 +254,12 @@ public class Builder extends JavaPlugin {
 			}
 			inst.oncancel = null;
 			inst.oncomplete = null;
-			boolean air = false, water = false, excavate = false;
-
+			inst.ContinueLoc =null;
+			inst.IgnoreAir = false;
+			inst.IgnoreLiquid = false;
+			inst.Excavate = false;
+			inst.HoldItems = true;
+			inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.spiral;			
 			for (int a = 0; a< args.length; a++){
 				if (args[a].toLowerCase().contains("oncomplete:")){
 					inst.oncomplete = args[a].split(":")[1];
@@ -269,19 +269,35 @@ public class Builder extends JavaPlugin {
 					inst.oncancel = args[a].split(":")[1];
 					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.oncancel + " on build cancelation");
 				}
-				else if (args[a].toLowerCase().contains("ignoreair")){
-					air = true;
+				else if (args[a].equalsIgnoreCase("ignoreair")){
+					inst.IgnoreAir = true;
 				}
-				else if (args[a].toLowerCase().contains("ignorewater")){
-					water = true;
+				else if (args[a].equalsIgnoreCase("ignorewater")){
+					inst.IgnoreLiquid = true;
 				}
-				else if (args[a].toLowerCase().contains("excavate")){
-					excavate = true;
+				else if (args[a].equalsIgnoreCase("excavate")){
+					inst.Excavate = true;
 					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will excavate first");
 				}
+				else if (args[a].equalsIgnoreCase("spiral")){
+					inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.spiral;
+				}
+				else if (args[a].equalsIgnoreCase("reversespiral")){
+					inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.reversespiral;
+				}
+				else if (args[a].equalsIgnoreCase("linear")){
+					inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.linear;
+				}
+				else if (args[a].equalsIgnoreCase("reverselinear")){
+					inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.reverselinear;
+				}
+				else if (args[a].equalsIgnoreCase("nohold")){
+					inst.HoldItems = false;
+				}
+
 			}
 
-			if (inst.StartBuild(player, air, water, excavate)){
+			if (inst.StartBuild(player)){
 
 			}
 			else {
@@ -396,7 +412,7 @@ public class Builder extends JavaPlugin {
 				mat = getMat(args[1]);
 				if(!this.MarkMats.contains(mat)) {
 					mat = -1;
-					player.sendMessage(ChatColor.GOLD + ThisNPC.getName() + " can not mark with + " + args[1]+ ".The specified item is not allowed. Using default.");   // Talk to the player.	
+					player.sendMessage(ChatColor.GOLD + ThisNPC.getName() + " can not mark with " + args[1]+ ".The specified item is not allowed. Using default.");   // Talk to the player.	
 				}
 			}
 
@@ -470,13 +486,18 @@ public class Builder extends JavaPlugin {
 
 			if (inst.schematic !=null)			player.sendMessage(ChatColor.GREEN + "Schematic: " + inst.schematic.GetInfo());
 			else player.sendMessage(ChatColor.YELLOW + "No schematic loaded.");
-
-			player.sendMessage(ChatColor.GREEN + "Ignore Air: " + inst.IgnoreAir + "  Ignore Liquid: " + inst.IgnoreLiquid);
-
 			if(inst.Origin ==null)player.sendMessage(ChatColor.GREEN + "Origin: My Location");
 			else player.sendMessage(ChatColor.GREEN + "Origin: " + inst.Origin.toString());
 
 			player.sendMessage(ChatColor.GREEN + "Status: " + inst.State);
+		
+			if (inst.State == net.jrbudda.builder.BuilderTrait.BuilderState.building){
+				player.sendMessage(ChatColor.GREEN + "Build Pattern XZ: " + inst.BuildPatternXY + " Build Pattern Y: onelayer");
+				player.sendMessage(ChatColor.GREEN + "Ignore Air: " + inst.IgnoreAir + "  Ignore Liquid: " + inst.IgnoreLiquid);
+				player.sendMessage(ChatColor.GREEN + "Hold Items: " + inst.HoldItems + "  Excavte: " + inst.Excavate);
+				player.sendMessage(ChatColor.GREEN + "On Complete: " + inst.oncomplete + "  On Cancel: " + inst.oncancel);
+				player.sendMessage(ChatColor.GREEN + "% Complete: Ehh it's done when it's done, buddy");
+			}	
 
 			return true;
 		}
@@ -511,8 +532,7 @@ public class Builder extends JavaPlugin {
 		CancelMessage = getConfig().getString("DefaultTexts.BuildCanceled","");
 		StartedMessage = getConfig().getString("DefaultTexts.BuildStarted","");
 		MarkMessage = getConfig().getString("DefaultTexts.Mark","");
-		HoldItems = getConfig().getBoolean("DefaultOptions.HoldItems",true);
-		
+	
 		for (String M:getConfig().getStringList("MarkMaterials")){
 			if (getMat(M) > 0) this.MarkMats.add(getMat(M));
 		}

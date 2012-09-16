@@ -28,30 +28,26 @@ public class BuilderSchematic {
 	}
 
 	public void CreateMarks(Location origin, double i, double j, double k, int mat){
+		this.Origin = origin.clone();
 		Q.clear();
-
 		BuildBlock a = new BuildBlock();
-		a.X =(int) (origin.getX()-i/2);
-		a.Y =origin.getBlockY();
-		a.Z =(int) (origin.getZ()-k/2);
+		a.X =(int) i/2;
+		a.Z =(int) (-k/2);
 		a.mat = new MaterialData(mat);
 		Q.add(a);
 		BuildBlock b = new BuildBlock();
-		b.X =(int) (origin.getX()-i/2);
-		b.Y =origin.getBlockY();
-		b.Z =(int) (origin.getZ()+k/2);
+		b.X =(int) i/2;
+		b.Z =(int) (k/2);
 		b.mat = new MaterialData(mat);
 		Q.add(b);
 		BuildBlock c = new BuildBlock();
-		c.X =(int) (origin.getX()+i/2);
-		c.Y =origin.getBlockY();	
-		c.Z =(int) (origin.getZ()-k/2);
+		c.X =(int) -i/2;
+		c.Z =(int) (k/2);
 		c.mat = new MaterialData(mat);
 		Q.add(c);
 		BuildBlock d = new BuildBlock();
-		d.X =(int) (origin.getX()+i/2);
-		d.Y =origin.getBlockY();
-		d.Z =(int) (origin.getZ()+k/2);
+		d.X =(int) -i/2;
+		d.Z =(int) (-k/2);
 		d.mat = new MaterialData(mat);
 		Q.add(d);
 	}
@@ -78,14 +74,17 @@ public class BuilderSchematic {
 	}
 
 
-	public void Reset(Location origin, boolean ignoreLiquids, boolean ignoreAir, boolean excavate){
+	public Vector offset(BuildBlock block){
+		return new Vector(block.X - this.dwidth()/2 + Origin.getBlockX(),block.Y - yoffset + Origin.getBlockY(),block.Z - this.dlength()/2 + Origin.getBlockZ());
+	}
 
-		int i = 0;
-		int j = 0;
-		int k = 0;
-		int di = 1;
-		int dk = 1;
-		int yoffset = 0;
+	Location Origin = null;
+	int yoffset = 0;
+
+	public void Reset(Location origin, boolean ignoreLiquids, boolean ignoreAir, boolean excavate, net.jrbudda.builder.BuilderTrait.BuildPatternsXZ pattern){
+
+		Origin = origin;
+
 		Q.clear();
 
 		//clear out empty planes on the bottom.
@@ -114,12 +113,32 @@ public class BuilderSchematic {
 		//well this is ugly, lol. Back and forth in x and z, linear in y.
 		for(int y = yoffset;y<height();y++){
 
-			List<BuildBlock> thisLayer = Util.spiralPrintLayer(y, Blocks);
+
+			List<BuildBlock> thisLayer = null;
+			switch (pattern){
+			case linear:
+				thisLayer = Util.LinearPrintLayer(y, Blocks);
+				break;
+			case reverselinear:
+				thisLayer = Util.LinearPrintLayer(y, Blocks);
+				java.util.Collections.reverse(thisLayer);
+				break;
+			case reversespiral:
+				thisLayer = Util.spiralPrintLayer(y, Blocks);
+				java.util.Collections.reverse(thisLayer);
+				break;
+			case spiral:
+				thisLayer = Util.spiralPrintLayer(y, Blocks);
+				break;
+			default:
+				thisLayer = Util.spiralPrintLayer(y, Blocks);
+				break;
+			}
+
+			Util.spiralPrintLayer(y, Blocks);
+
 
 			for(BuildBlock b:thisLayer){
-				b.X += origin.getBlockX() - this.dwidth()/2;
-				b.Y += origin.getBlockY() - yoffset;
-				b.Z += origin.getBlockZ() - this.dheight()/2; 
 
 				if (excavate) exair.add(new BuildBlock(0, (byte) 0, b.X, b.Y, b.Z));
 

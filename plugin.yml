@@ -1,6 +1,6 @@
 name: Builder
 author: jrbudda
-version: 0.3.3
+version: 0.4
 main: net.jrbudda.builder.Builder
 depend:
   - Citizens
@@ -19,8 +19,6 @@ permissions:
       builder.build: true
       builder.mark: true
       builder.origin: true
-      builder.ignoreair: true
-      builder.ignoreliquid: true
       builder.check: true
       builder.compare: true
       builder.info: true
