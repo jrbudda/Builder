@@ -1,6 +1,6 @@
 name: Builder
 author: jrbudda
-version: 0.4
+version: 0.6.3
 main: net.jrbudda.builder.Builder
 depend:
   - Citizens
@@ -22,3 +22,10 @@ permissions:
       builder.check: true
       builder.compare: true
       builder.info: true
+      builder.survey: true
+      builder.timeout: true
+      builder.ignoreprotection: true
+      builder.list: true
+      builder.hold: true
+      builder.supply: true
+      builder.donate: true

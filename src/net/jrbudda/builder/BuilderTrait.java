@@ -7,6 +7,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -14,6 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.MemorySection;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -68,7 +70,27 @@ public class BuilderTrait extends Trait implements Toggleable {
 		State = BuilderState.valueOf(key.getString("State","idle"));
 		oncancel = key.getString("oncancel",null);
 		oncomplete = key.getString("oncomplete",null);
-		HoldItems = key.getBoolean("HoldItems", true);
+		onStart = key.getString("onstart",null);
+		HoldItems = key.getBoolean("HoldItems",plugin.getConfig().getBoolean("DefaultOptions.Holditems", true));
+		RequireMaterials = key.getBoolean("RequireMaterials",plugin.getConfig().getBoolean("DefaultOptions.RequireMaterials", false));
+
+		try {
+			if(key.keyExists("NeededMaterials")){
+				org.bukkit.configuration.MemorySection derp = (MemorySection) key.getRaw("NeededMaterials");
+				Set<String> keys = derp.getKeys(false);
+				for (String k : keys){
+					NeededMaterials.put(Integer.valueOf(k),derp.getInt(k));
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		Yoffset = key.getInt("YOffset");
+		IgnoreProtection = key.getBoolean("IgnoreProtection", plugin.getConfig().getBoolean("DefaultOptions.IgnoreProtection"));
+		MoveTimeout = key.getDouble("MoveTimeoutSeconds", plugin.getConfig().getDouble("DefaultOptions.MoveTimeoutSeconds",2.0));
+		if(MoveTimeout < .1) MoveTimeout = .1;
+
 		try {
 			BuildPatternXY = BuildPatternsXZ.valueOf( key.getString("PatternXY","spiral"));	
 		} catch (Exception e) {
@@ -113,11 +135,11 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		npc.getNavigator().getDefaultParameters().avoidWater(false);
 
-		if (State == BuilderState.building){
+		if (State == BuilderState.building || State ==BuilderState.collecting){
 			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 				public void run() {
 					State = BuilderState.idle;
-					StartBuild(plugin.getServer().getConsoleSender());
+					TryBuild(plugin.getServer().getConsoleSender());
 				}
 			}, 20);
 		}
@@ -139,8 +161,18 @@ public class BuilderTrait extends Trait implements Toggleable {
 		key.setString("State", State.toString());
 		key.setString("PatternXY",BuildPatternXY.toString());
 		key.setBoolean("HoldItems", HoldItems);
+		key.setBoolean("RequireMaterials",RequireMaterials);
+		key.setDouble("MoveTimeoutSeconds", MoveTimeout);
+		key.setInt("YOffset", Yoffset);
+		key.setRaw("NeededMaterials",NeededMaterials);
 		if(oncancel!=null) key.setString("oncancel", oncancel);
+		else if(key.keyExists("oncancel")) key.removeKey("oncancel");
+
+		if(onStart!=null) key.setString("onstart", onStart);
+		else if(key.keyExists("onstart")) key.removeKey("onstart");
+
 		if(oncomplete!=null) key.setString("oncomplete",oncomplete);
+		else if(key.keyExists("oncomplete")) key.removeKey("oncomplete");
 
 		if (Origin!=null){
 			key.setDouble("Origin.x", Origin.getX());
@@ -150,6 +182,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 			key.setDouble("Origin.yaw", Origin.getYaw());
 			key.setDouble("Origin.pitch", Origin.getPitch());		
 		}
+		else if(key.keyExists("Origin")) key.removeKey("Origin");
 
 		if (ContinueLoc!=null){
 			key.setDouble("ContinueLoc.x", ContinueLoc.getX());
@@ -159,8 +192,10 @@ public class BuilderTrait extends Trait implements Toggleable {
 			key.setDouble("ContinueLoc.yaw", ContinueLoc.getYaw());
 			key.setDouble("ContinueLoc.pitch", ContinueLoc.getPitch());		
 		}
+		else if(key.keyExists("ContinueLoc")) key.removeKey("ContinueLoc");
 
 		if(SchematicName!=null)	key.setString("Schematic",SchematicName);
+		else if(key.keyExists("Schematic")) key.removeKey("Schematic");
 
 	}
 
@@ -182,77 +217,123 @@ public class BuilderTrait extends Trait implements Toggleable {
 	public Boolean RequireMaterials = false;
 	public Location Origin = null;
 	public Location ContinueLoc = null;
+	public String onStart = null;
 	public String oncomplete = null;
 	public String oncancel = null;
 	public Boolean HoldItems = true;
+	public Boolean GroupByLayer = true;
+	public Integer BuildYLayers = 1;
+	public Integer Yoffset = 0;
 	public BuildPatternsXZ BuildPatternXY = BuildPatternsXZ.spiral;
+	public Boolean IgnoreProtection = false;
+	public double MoveTimeout = 2.0;
 
+	public Map<Integer, Integer> NeededMaterials = new HashMap<Integer, Integer>();
+
+	public	 Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
 
 	Packet anim = null;
-	public enum BuilderState {idle, building, marking};
+	public enum BuilderState {idle, building, marking, collecting};
 	public enum BuildPatternsXZ {spiral, reversespiral, linear, reverselinear};
 	private boolean clearingMarks = false;
 
-	public String GetMatsList(){
+	Map<Player, Long> Sessions = new  HashMap<Player, Long>();
+
+	public String GetMatsList(boolean excavate){
 		if(!npc.isSpawned()) return "";
 		if (schematic == null) return "";
-		if (this.State != BuilderState.idle) return "";
+		if (this.State != BuilderState.idle) return ChatColor.RED + "Cannot survey while building";
 
-		Map<Material, Integer> derp = schematic.MaterialsList();
+		Location start = null;
 
-		StringBuilder sb = new StringBuilder();
+		if (Origin !=null) start = Origin.clone(); 
+		else if (ContinueLoc!=null) start = ContinueLoc.clone();
+		else start = npc.getBukkitEntity().getLocation().clone();
+		
+		try {
+			NeededMaterials = Util.MaterialsList(schematic.BuildQueue(start, true, true, excavate, BuildPatternsXZ.linear ,false , 1,0));
 
-		java.util.Iterator<Entry<Material, Integer>> it = derp.entrySet().iterator();
-
-		while (it.hasNext()){
-			Entry<Material, Integer> i = it.next();
-			sb.append(i.getKey() + ":" + i.getValue());
-			if(it.hasNext())sb.append(", ");
+		} catch (Exception e) {
+			plugin.getServer().getConsoleSender().sendMessage(e.getMessage());
 		}
-		return sb.toString();
+
+		return Util.printList(NeededMaterials);
+
 	}
 
+	public boolean TryBuild(CommandSender sender){
 
-	public String GetComparisonMatsList(Player player){
-		if(!npc.isSpawned()) return "";
-		if (schematic == null) return "";
-		if (this.State != BuilderState.idle) return "";
+		if (sender == null) sender = this.sender;
 
-		Map<Material, Integer> derp = schematic.MaterialsList();
+		this.sender = sender;
 
-		ListIterator<ItemStack> pit = player.getInventory().iterator();
-		Map<Material, Integer> pinv = new HashMap<Material,Integer>();
-		while (pit.hasNext()){
-			ItemStack p = pit.next();
-			if (pinv.containsKey(p.getType())){
-				Integer amt = pinv.get(p.getType())  +  (Integer)p.getAmount();
-				pinv.put(p.getType(), amt);
+		if (this.RequireMaterials){
+			java.util.Iterator<Entry<Integer, Integer>> it = NeededMaterials.entrySet().iterator();
+			long c = 0;
+			while (it.hasNext()){
+				c+= it.next().getValue();
+			}	
+
+			if (c>0){
+				sender.sendMessage(plugin.format(plugin.CollectingMessage, npc, schematic, sender, SchematicName, c+""));
+				this.State =BuilderState.collecting;
+				return true;
 			}
-			else 		pinv.put(p.getType(), p.getAmount());
+
+
 		}
 
-		StringBuilder sb = new StringBuilder();
-
-		java.util.Iterator<Entry<Material, Integer>> it = derp.entrySet().iterator();
-
-		while (it.hasNext()){
-			Entry<Material, Integer> i = it.next();
-			int pamt = 0;
-			if(pinv.containsKey(i.getKey())) pamt = pinv.get(i.getKey());
-			if (pamt >= i.getValue()) sb.append(ChatColor.GREEN);
-			else sb.append(ChatColor.RED);	
-			sb.append(i.getKey() + ":" + i.getValue());
-			if(it.hasNext())sb.append(ChatColor.RESET + ", ");
-		}
-
-		return sb.toString();
+		return StartBuild(sender);
 	}
 
 
-	public boolean StartBuild(CommandSender player){
+	//	public String GetComparisonMatsList(Player player){
+	//		if(!npc.isSpawned()) return "";
+	//		if (schematic == null) return "";
+	//		if (this.State != BuilderState.idle) return "";
+	//
+	//		Location start = null;
+	//		if (Origin !=null) start = Origin.clone(); 
+	//		else if (ContinueLoc!=null) start = ContinueLoc.clone();
+	//		else start = npc.getBukkitEntity().getLocation().clone();
+	//
+	//		Map<Integer, Integer> derp = Util.MaterialsList(schematic.BuildQueue(start, true, true, false, BuildPatternsXZ.linear ,false , 1, 0));
+	//
+	//		ListIterator<ItemStack> pit = player.getInventory().iterator();
+	//		Map<Material, Integer> pinv = new HashMap<Material,Integer>();
+	//		while (pit.hasNext()){
+	//			ItemStack p = pit.next();
+	//			if (pinv.containsKey(p.getType())){
+	//				Integer amt = pinv.get(p.getType())  +  (Integer)p.getAmount();
+	//				pinv.put(p.getType(), amt);
+	//			}
+	//			else 		pinv.put(p.getType(), p.getAmount());
+	//		}
+	//
+	//		StringBuilder sb = new StringBuilder();
+	//
+	//		java.util.Iterator<Entry<Integer, Integer>> it = derp.entrySet().iterator();
+	//
+	//		while (it.hasNext()){
+	//			Entry<Integer, Integer> i = it.next();
+	//			int pamt = 0;
+	//			if(pinv.containsKey(i.getKey())) pamt = pinv.get(i.getKey());
+	//			if (pamt >= i.getValue()) sb.append(ChatColor.GREEN);
+	//			else sb.append(ChatColor.RED);	
+	//			sb.append(i.getKey() + ":" + i.getValue());
+	//			if(it.hasNext())sb.append(ChatColor.RESET + ", ");
+	//		}
+	//
+	//		return sb.toString();
+	//	}
+
+
+	public long startingcount = 1;
+
+	private boolean StartBuild(CommandSender player){
 		if(!npc.isSpawned()) return false;
 		if (schematic == null) return false;
-		if (this.State != BuilderState.idle) return false;
+		if (this.State == BuilderState.building) return false;
 
 		Location start = null;
 
@@ -260,15 +341,23 @@ public class BuilderTrait extends Trait implements Toggleable {
 		else if (ContinueLoc!=null) start = ContinueLoc.clone();
 		else start = npc.getBukkitEntity().getLocation().clone();
 
-		schematic.Reset(start, IgnoreLiquid, IgnoreAir,Excavate, this.BuildPatternXY);
+		Q = schematic.BuildQueue(start, IgnoreLiquid, IgnoreAir,Excavate, this.BuildPatternXY,this.GroupByLayer, this.BuildYLayers, this.Yoffset);
 
+		startingcount = Q.size();
 		ContinueLoc = start.clone();
 
 		mypos = npc.getBukkitEntity().getLocation().clone();
 
 		this.State = BuilderState.building;
-		this.sender = player;
-		sender.sendMessage(plugin.format(plugin.StartedMessage, npc,schematic));
+
+		sender.sendMessage(plugin.format(plugin.StartedMessage, npc,schematic, player, null, "0"));
+
+		if (onStart!=null){
+			String resp = plugin.runTask(onStart, npc);
+			if (resp ==null) sender.sendMessage("Task " + onStart + "started");
+			else sender.sendMessage("Task " + onStart + " could not be started: " + resp);				
+		}
+
 		SetupNextBlock();
 
 		return true;
@@ -288,6 +377,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		oncomplete = null;
 		oncancel = null;
+		onStart = null;
 		_schematic = schematic;
 
 		mypos = npc.getBukkitEntity().getLocation().clone();
@@ -296,12 +386,12 @@ public class BuilderTrait extends Trait implements Toggleable {
 		schematic.Name = _schematic.Name;
 
 		if (Origin==null){
-			schematic.CreateMarks(this.npc.getBukkitEntity().getLocation(),_schematic.width(), _schematic.height(), _schematic.length(), mat);
+			ContinueLoc = this.npc.getBukkitEntity().getLocation().clone();
 		}
 		else{
-			schematic.CreateMarks(Origin,_schematic.width(), _schematic.height(), _schematic.length(), mat);
+			ContinueLoc = Origin.clone();
 		}
-
+		Q = schematic.CreateMarks(_schematic.width(), _schematic.height(), _schematic.length(), mat);
 		this.State = BuilderState.marking;
 
 		SetupNextBlock();
@@ -321,48 +411,62 @@ public class BuilderTrait extends Trait implements Toggleable {
 				CancelBuild();
 				return;
 			}
+			//
+			//			next = Q.poll();
+			//			if (next == null) {
+			//				CompleteBuild();
+			//				return;
+			//			}
+			//
+			//			pending = ContinueLoc.getWorld().getBlockAt(schematic.offset(next,ContinueLoc).toLocation(ContinueLoc.getWorld()));
 
+			boolean ok;
 			int i = 0;
-
 			do{
+
 				i++;
 
-				if(i>100){
+				if(i>500){
 					//anti lag measure.
 					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin,new Runnable(){
 						public void run() {
 							SetupNextBlock();
 						}
-					});		
+					});	
 					return;
 				}
 
-				next = schematic.getNext();
+				next = Q.poll();
 
 				if (next == null) {
 					CompleteBuild();
 					return;
 				}
 
-				pending = schematic.Origin.getWorld().getBlockAt(schematic.offset(next).toLocation(schematic.Origin.getWorld()));
+				pending = ContinueLoc.getWorld().getBlockAt(schematic.offset(next,ContinueLoc));
+
+				ok= true;
 
 				//dont replace grass with dirt, and vice versa.
-				if (pending.getTypeId() == 3 && next.mat.getItemTypeId() ==2) continue;
-				if (pending.getTypeId() == 2 && next.mat.getItemTypeId() ==3) continue;
-
+				if (pending.getTypeId() == 3 && next.mat.getItemTypeId() ==2) ok = false;
+				if (pending.getTypeId() == 2 && next.mat.getItemTypeId() ==3) ok = false;
+				if ((pending.getTypeId() == next.mat.getItemTypeId() && pending.getData() == next.mat.getData())) ok =false;
 				//dont bother putting a block that already exists.
-			} while ((pending.getTypeId() == next.mat.getItemTypeId() && pending.getData() == next.mat.getData()));
+			} while(!ok);
+
+
 
 		}
 		else{
 			clearingMarks = true;
 			next = marks.remove();
-			pending = schematic.Origin.getWorld().getBlockAt(next.X, next.Y, next.Z);
+			pending = ContinueLoc.getWorld().getBlockAt(next.X, next.Y, next.Z);
 
 		}
 
 
 		if(npc.isSpawned()){
+
 			if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity || npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems){
 				int m = next.mat.getItemTypeId();
 				if (m <=0) m = 278;
@@ -373,24 +477,29 @@ public class BuilderTrait extends Trait implements Toggleable {
 		}
 
 
-		canceltaskid =	plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-			public void run() {
-				if(npc.getNavigator().isNavigating()){
-					npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation().clone().add(0, 1, 0));
-					npc.getNavigator().cancelNavigation();
-				}
-			}
-		}, 41);
-
 		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 			public void run() {
-				npc.getNavigator().setTarget(findaspot(pending));
-				npc.getNavigator().getLocalParameters().stationaryTicks(40);
-				npc.getNavigator().getLocalParameters().stuckAction(BuilderTeleportStuckAction.INSTANCE);
+				if (npc.isSpawned()){
+					npc.getNavigator().setTarget(findaspot(pending).add(.5, 1, .5));
+					npc.getNavigator().getLocalParameters().stationaryTicks((int) (MoveTimeout*20));
+					npc.getNavigator().getLocalParameters().stuckAction(BuilderTeleportStuckAction.INSTANCE);
+				}	
 			}
-		}, 1);
+		});
+
+		canceltaskid =	plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+			public void run() {
+				if (npc.isSpawned()){
+					if(npc.getNavigator().isNavigating()){
+						npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation());
+						npc.getNavigator().cancelNavigation();
+					}		
+				}
+			}
+		}, (long) (MoveTimeout*20)+1);
 
 	}
+
 
 	int dirz = 1, dirx = 1;
 
@@ -402,12 +511,14 @@ public class BuilderTrait extends Trait implements Toggleable {
 	public void CompleteBuild(){
 		if (sender == null) sender = plugin.getServer().getConsoleSender();
 
-		sender.sendMessage(plugin.format(plugin.CompleteMessage, npc,schematic));
+		if (this.State == BuilderState.building){
+			sender.sendMessage(plugin.format(plugin.CompleteMessage, npc,schematic, sender,null,"0"));
 
-		if (oncomplete!=null){
-			String resp = plugin.runTask(oncomplete, npc);
-			if (resp ==null) sender.sendMessage("Task " + oncomplete + "started");
-			else sender.sendMessage("Task " + oncomplete + " could not be started: " + resp);				
+			if (oncomplete!=null){
+				String resp = plugin.runTask(oncomplete, npc);
+				if (resp ==null) sender.sendMessage("Task " + oncomplete + "started");
+				else sender.sendMessage("Task " + oncomplete + " could not be started: " + resp);				
+			}
 		}
 
 		stop ();
@@ -424,6 +535,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 			marks.addAll(_marks);
 			_marks.clear();
 			if (_schematic !=null) schematic = _schematic;
+			_schematic = null;
 		}
 		else{
 			this.State =BuilderState.idle;
@@ -432,10 +544,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 				npc.getNavigator().setTarget(mypos);
 			}
 		}
-		sender = null;
-		oncomplete = null;
-		oncancel = null;
-		ContinueLoc = null;
+
 
 		if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getBukkitEntity()).getInventory().setItemInHand(new ItemStack(0));	
 		else if((npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems)	((org.bukkit.entity.Enderman) npc.getBukkitEntity()).setCarriedMaterial(new MaterialData(0));
@@ -443,10 +552,16 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if (stop && plugin.getServer().getPluginManager().getPlugin("dynmap") != null){
 			if (plugin.getServer().getPluginManager().getPlugin("dynmap").isEnabled()) {
 				org.dynmap.DynmapCommonAPI dyn  = (DynmapCommonAPI) (plugin.getServer().getPluginManager().getPlugin("dynmap"));
-				dyn.triggerRenderOfVolume(npc.getBukkitEntity().getWorld().getName(), schematic.Origin.getBlockX() - schematic.width()/2, schematic.Origin.getBlockY(), schematic.Origin.getBlockZ() - schematic.length()/2, schematic.Origin.getBlockX() + schematic.width()/2, schematic.Origin.getBlockY() + schematic.height()/2, schematic.Origin.getBlockZ() + schematic.length()/2);
+				dyn.triggerRenderOfVolume(npc.getBukkitEntity().getWorld().getName(), this.ContinueLoc.getBlockX() - schematic.width()/2, this.ContinueLoc.getBlockY(),  this.ContinueLoc.getBlockZ() - schematic.length()/2,  this.ContinueLoc.getBlockX() + schematic.width()/2,  this.ContinueLoc.getBlockY() + schematic.height()/2,  this.ContinueLoc.getBlockZ() + schematic.length()/2);
 			}
 		}
 
+
+		sender = null;
+		oncomplete = null;
+		oncancel = null;
+		onStart= null;
+		ContinueLoc = null;
 
 	}
 
@@ -467,12 +582,40 @@ public class BuilderTrait extends Trait implements Toggleable {
 				_marks.add(derp);
 			}
 
-			//change block
-			pending.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
+			boolean b = false;
 
+			//			if(!IgnoreProtection){
+			//				if(owner!=null){
+			//					if (!owner.isOp()) {
+			//						BlockPlaceEvent ev = new BlockPlaceEvent(pending, pending.getState(), pending.getRelative(org.bukkit.block.BlockFace.DOWN), null, owner, b);
+			//						plugin.getServer().getPluginManager().callEvent(ev);
+			//						b = ev.isCancelled();
+			//					}
+			//				}
+			//				//				else{
+			//				//					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+			//				//						public void run() {
+			//				//							if (npc.isSpawned()){
+			//				//								if(npc.getNavigator().isNavigating()){
+			//				//									npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation());
+			//				//									npc.getNavigator().cancelNavigation();
+			//				//								}		
+			//				//							}
+			//				//						}
+			//				//					}, 100);
+			//				//				}
+			//
+			//
+			//			}
+
+			//change block
+			if (!b){
+				pending.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
+				if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity)	net.citizensnpcs.util.Util.sendPacketNearby(npc.getBukkitEntity().getLocation(),anim , 64);	
+			}
 
 			//arm swing
-			if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity)	net.citizensnpcs.util.Util.sendPacketNearby(npc.getBukkitEntity().getLocation(),anim , 64);	
+
 		}
 
 		if (marks.size()==0) clearingMarks = false;
@@ -489,33 +632,12 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(0, a, -1))) return  base.getRelative(0, a-1, -1).getLocation();
-		}
-
-		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(0, a, 1))) return  base.getRelative(0, a-1, 1).getLocation();
-		}
-
-		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(1, a, 0))) return  base.getRelative(1, a-1, 0).getLocation();
-		}
-
-		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(-1, a, 0))) return  base.getRelative(-1, a-1, 0).getLocation();
-		}
-
-		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(-1, a, -1))) return  base.getRelative(-1, a-1, -1).getLocation();
-		}
-
-		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(-1, a, 1))) return  base.getRelative(-1, a-1, 1).getLocation();
-		}
-
-		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(1, a, 1))) return  base.getRelative(1, a-1, 1).getLocation();
-		}
-
-		for (int a=3; a>=-5;a--){
 			if(canStand(base.getRelative(1, a, -1))) return  base.getRelative(1, a-1, -1).getLocation();
 		}
 
@@ -524,9 +646,20 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	}
 
-
 	private boolean canStand(Block base){
-		return base.getRelative(0, -1, 0).isEmpty() == false && base.getRelative(0, -1, 0).isLiquid() == false && (base.isEmpty()||(base.isLiquid()));		
+		Block below = base.getRelative(0, -1, 0);
+		if(!below.isEmpty() && net.minecraft.server.Block.byId[below.getTypeId()].material.isSolid()){
+			if(base.isEmpty() || net.minecraft.server.Block.byId[base.getTypeId()].material.isSolid()==false){
+				return true;
+			}
+		}
+		return false;
 	}
 
+
 }
+
+
+
+
+

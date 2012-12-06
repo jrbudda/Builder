@@ -2,9 +2,12 @@ package net.jrbudda.builder;
 
 //import java.util.HashMap;
 import java.io.File;
+import java.io.IOException;
 import java.rmi.activation.ActivationException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 //import java.util.Map;
 import java.util.logging.Level;
 
@@ -35,6 +38,12 @@ public class Builder extends JavaPlugin {
 	public String  CompleteMessage = "";
 	public String  CancelMessage = "";
 	public String  MarkMessage = "";
+	public String SurveyMessage = "";
+	public String SupplyListMessage = "";
+	public String SupplyNeedMessage = "";
+	public String SupplyDontNeedMessage = "";
+	public String SupplyTakenMessage = "";
+	public String CollectingMessage = "";
 
 	@Override
 	public void onEnable() {
@@ -58,9 +67,12 @@ public class Builder extends JavaPlugin {
 		this.getServer().getPluginManager().registerEvents(new BuilderListener(this), this);
 
 
-		this.saveDefaultConfig();
+
 		reloadMyConfig();
 	}
+
+
+
 
 	public BuilderTrait getBuilder(Entity ent){
 		if( ent == null) return null;
@@ -84,6 +96,8 @@ public class Builder extends JavaPlugin {
 
 	//***Denizen Hook
 	private Plugin denizen = null;
+
+
 	private void setupDenizenHook() throws ActivationException {
 		denizen = this.getServer().getPluginManager().getPlugin("Denizen");
 		if (denizen != null) {
@@ -99,19 +113,18 @@ public class Builder extends JavaPlugin {
 		net.aufdemrand.denizen.scripts.ScriptHelper sE = ((net.aufdemrand.denizen.Denizen)denizen).getScriptEngine().helper;
 		List<String> theScript = sE.getScript(taskname + ".Script");
 		if (theScript.isEmpty()) return "Empty Script!";
+
 		sE.queueScriptEntries(dnpc, sE.buildScriptEntries(dnpc, theScript, taskname), net.aufdemrand.denizen.scripts.ScriptEngine.QueueType.ACTIVITY);
+
 		return null;
 	}
 	//
 
 	@Override
 	public void onDisable() {
-
 		getLogger().log(Level.INFO, " v" + getDescription().getVersion() + " disabled.");
 		Bukkit.getServer().getScheduler().cancelTasks(this);
-
 	}
-
 
 	private	boolean tryParseInt(String value)  
 	{  
@@ -171,16 +184,105 @@ public class Builder extends JavaPlugin {
 			player.sendMessage(ChatColor.GOLD + "/builder origin clear");
 			player.sendMessage(ChatColor.GOLD + "  Clears the build origin.");
 			player.sendMessage(ChatColor.GOLD + "/builder origin schematic");
-			player.sendMessage(ChatColor.GOLD + "  Sets the build origin to the center of the loaded schematic's original position");
+			player.sendMessage(ChatColor.GOLD + "  Sets the build origin to the loaded schematic's original position");
+			player.sendMessage(ChatColor.GOLD + "/builder origin me");
+			player.sendMessage(ChatColor.GOLD + "  Sets the build origin to your current location");
+			player.sendMessage(ChatColor.GOLD + "/builder origin current");
+			player.sendMessage(ChatColor.GOLD + "  If the builder is currently building, sets the origin to the starting position of the current project.");
 			player.sendMessage(ChatColor.GOLD + "/builder mark (item)");
 			player.sendMessage(ChatColor.GOLD + "  marks the 4 corners of the footprint. Optionally specify the material name or id.");
-			player.sendMessage(ChatColor.GOLD + "/builder build (ignoreair) (ignorewater) (excavate)");
+			player.sendMessage(ChatColor.GOLD + "/builder build (ignoreair) (ignorewater) (excavate) (layers:#) (groupall) (reversespiral) (linear) (reverselinear) (yoffset:#)");
 			player.sendMessage(ChatColor.GOLD + "  Begin building with the selected options.");
 			player.sendMessage(ChatColor.GOLD + "/builder cancel");
 			player.sendMessage(ChatColor.GOLD + "  Cancel building");
+			player.sendMessage(ChatColor.GOLD + "/builder survey (excavate)");
+			player.sendMessage(ChatColor.GOLD + "  View the list of materials required to build the loaded scheamtic at the current origin with the specified options.");
+			player.sendMessage(ChatColor.GOLD + "/builder timeout [0.1 - 2000000.0]");
+			player.sendMessage(ChatColor.GOLD + "  Sets the maximum number of seconds between blocks");
+			player.sendMessage(ChatColor.GOLD + "/builder supply [true/false]");
+			player.sendMessage(ChatColor.GOLD + "  set whether the Builder needs to be supplied with materials before building.");	
+			player.sendMessage(ChatColor.GOLD + "/builder hold [true/false]");
+			player.sendMessage(ChatColor.GOLD + "  set whether the Builder holds blocks while building.");	
 			return true;
 		}
+		else if (args[0].equalsIgnoreCase("reload")) {
+			if(!player.hasPermission("builder.reload")) {
+				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
+				return true;
+			}
 
+			this.reloadMyConfig();
+			player.sendMessage(ChatColor.GREEN + "reloaded Builder/config.yml");
+			return true;
+		}
+		else if (args[0].equalsIgnoreCase("testmats")) {
+			java.util.Queue<BuildBlock> q = new java.util.LinkedList<BuildBlock>();
+		
+			StringBuilder sb = new StringBuilder();
+			
+			for (int j = 1; j < 137; j++) {
+				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
+		     }
+
+			java.io.File f = new File("mats.txt");
+			java.io.FileWriter fw;
+			try {
+				fw = new java.io.FileWriter(f);					
+				fw.write(sb.toString());
+				fw.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return true;
+		}
+		else if (args[0].equalsIgnoreCase("list")) {
+			if(!player.hasPermission("builder.list")) {
+				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
+				return true;
+			}
+
+			// Directory path here
+			String path =schematicsFolder; 
+
+			File folder = new File(path);
+			File[] listOfFiles = folder.listFiles(); 
+			StringBuilder out = new StringBuilder();
+			int i1= 0;
+
+			if (listOfFiles.length ==0){
+				player.sendMessage(ChatColor.RED+"No schematics found.");
+				return true;
+			}
+
+			for ( i1 = 0; i1 < listOfFiles.length-1; i1++) 
+			{
+
+				if (listOfFiles[i1].isFile()) 
+				{
+					String   file = listOfFiles[i1].getName();
+					if (file.endsWith(".schematic") )
+					{
+						out.append(file.replace(".schematic",", "));
+					}
+				}
+			}
+
+
+			if (listOfFiles[i1].isFile()) 
+			{
+				String   file = listOfFiles[i1].getName();
+				if (file.endsWith(".schematic") )
+				{
+					out.append(file.replace(".schematic","."));
+				}
+			}
+
+
+			player.sendMessage(ChatColor.GREEN + "Schematics: "+ChatColor.WHITE + out.toString());
+
+			return true;
+		}
 
 		NPC ThisNPC;
 
@@ -214,7 +316,7 @@ public class Builder extends JavaPlugin {
 		}
 
 
-		if (sender instanceof Player){
+		if (sender instanceof Player && !CitizensAPI.getNPCRegistry().isNPC((Entity) sender)){
 
 			if (ThisNPC.getTrait(Owner.class).getOwner().equalsIgnoreCase(player.getName())) {
 				//OK!
@@ -244,21 +346,23 @@ public class Builder extends JavaPlugin {
 
 		BuilderTrait inst = getBuilder(ThisNPC);
 
-
 		// Commands
-
 		if (args[0].equalsIgnoreCase("build")) {
 			if(!player.hasPermission("builder.build")) {
 				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
 				return true;
 			}
+
+
 			inst.oncancel = null;
 			inst.oncomplete = null;
+			inst.onStart = null;
 			inst.ContinueLoc =null;
 			inst.IgnoreAir = false;
 			inst.IgnoreLiquid = false;
 			inst.Excavate = false;
-			inst.HoldItems = true;
+			inst.GroupByLayer = true;
+			inst.BuildYLayers = 1;
 			inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.spiral;			
 			for (int a = 0; a< args.length; a++){
 				if (args[a].toLowerCase().contains("oncomplete:")){
@@ -269,10 +373,33 @@ public class Builder extends JavaPlugin {
 					inst.oncancel = args[a].split(":")[1];
 					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.oncancel + " on build cancelation");
 				}
+				else if (args[a].toLowerCase().contains("onstart:")){
+					inst.onStart = args[a].split(":")[1];
+					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.onStart + " on when building starts");
+				}
+				else if (args[a].toLowerCase().contains("layers:")){
+					String test = args[a].split(":")[1];
+					if (tryParseInt(test)){
+						int layers = Integer.parseInt(test);
+						if (layers < 1) layers=1;
+						if (layers > Integer.MAX_VALUE) layers=Integer.MAX_VALUE;
+						inst.BuildYLayers = layers;
+					}
+				}
+				else if (args[a].toLowerCase().contains("yoffset:")){
+					String test = args[a].split(":")[1];
+					if (tryParseInt(test)){
+						int layers = Integer.parseInt(test);
+						inst.Yoffset = layers;
+					}
+				}
+				else if (args[a].equalsIgnoreCase("groupall")){
+					inst.GroupByLayer =false;
+				}
 				else if (args[a].equalsIgnoreCase("ignoreair")){
 					inst.IgnoreAir = true;
 				}
-				else if (args[a].equalsIgnoreCase("ignorewater")){
+				else if (args[a].equalsIgnoreCase("ignoreliquid")){
 					inst.IgnoreLiquid = true;
 				}
 				else if (args[a].equalsIgnoreCase("excavate")){
@@ -291,13 +418,14 @@ public class Builder extends JavaPlugin {
 				else if (args[a].equalsIgnoreCase("reverselinear")){
 					inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.reverselinear;
 				}
-				else if (args[a].equalsIgnoreCase("nohold")){
-					inst.HoldItems = false;
-				}
 
 			}
 
-			if (inst.StartBuild(player)){
+			if(inst.RequireMaterials){
+				inst.GetMatsList(inst.Excavate);
+			}
+
+			if (inst.TryBuild(player)){
 
 			}
 			else {
@@ -312,8 +440,8 @@ public class Builder extends JavaPlugin {
 				return true;
 			}
 
-			if (inst.State ==net.jrbudda.builder.BuilderTrait.BuilderState.building){
-				sender.sendMessage(format(CancelMessage, ThisNPC,inst.schematic));
+			if (inst.State != BuilderTrait.BuilderState.idle){
+				sender.sendMessage(format(CancelMessage, ThisNPC,inst.schematic, sender, null, "0"));
 			}
 			else {
 				player.sendMessage(ChatColor.RED + ThisNPC.getName() + " is not building.");   // Talk to the player.
@@ -323,26 +451,26 @@ public class Builder extends JavaPlugin {
 			return true;
 
 		}
-		else if (args[0].equalsIgnoreCase("reload")) {
-			if(!player.hasPermission("builder.reload")) {
+		else if (args[0].equalsIgnoreCase("survey")) {
+			if(!player.hasPermission("builder.survey")) {
 				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
 				return true;
 			}
 
-			this.reloadMyConfig();
-			player.sendMessage(ChatColor.GREEN + "reloaded Builder/config.yml");
-			return true;
-		}
-		else if (args[0].equalsIgnoreCase("check")) {
-			if(!player.hasPermission("builder.check")) {
-				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
-				return true;
+			boolean ex = false;
+
+			for (int a = 0; a< args.length; a++){
+				if (args[a].toLowerCase().contains("excavate")){
+					ex = true;
+				}
 			}
 			if( inst.schematic == null) {
 				player.sendMessage(ChatColor.RED + "No Schematic Loaded!");   // Talk to the player.
 			}
-			else	player.sendMessage(inst.GetMatsList());   // Talk to the player.
-
+			else{
+				sender.sendMessage(format(SurveyMessage + (ex ? " (exvacate)" : ""), ThisNPC, inst.schematic, sender, null, "0"));
+				player.sendMessage(inst.GetMatsList(ex));   // Talk to the player.
+			}
 
 			return true;
 
@@ -353,19 +481,13 @@ public class Builder extends JavaPlugin {
 				return true;
 			}
 
-
-			if(inst.State != BuilderTrait.BuilderState.idle){
-				player.sendMessage(ChatColor.RED + "Cannot change origin while building!");
-				return true;
-			}
-
 			if (args.length <= 1) {
+
 				if(inst.getNPC().isSpawned()){
 					inst.Origin = inst.getNPC().getBukkitEntity().getLocation();
 					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " build origin has been set to its current location.");   // Talk to the player.
 				}
 				else		player.sendMessage(ChatColor.RED + ThisNPC.getName() + " not spawned."); 
-
 			}
 			else {
 				if(args[1].equalsIgnoreCase("clear")){
@@ -384,21 +506,23 @@ public class Builder extends JavaPlugin {
 					inst.Origin = inst.schematic.getSchematicOrigin(inst);
 					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " build origin has been set to:." + inst.Origin);   // Talk to the player.
 				}
+				else if(args[1].equalsIgnoreCase("me")){
+					if(player instanceof Player){
+						inst.Origin = ((Player)player).getLocation().clone();
+						player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " build origin has been set to your location");   // Talk to the player.
+					}
+					else 	player.sendMessage(ChatColor.RED +  "This command can only be used in-game");  
+				}
+				else if(args[1].equalsIgnoreCase("current")){
+					if(inst.State == net.jrbudda.builder.BuilderTrait.BuilderState.building){
+						inst.Origin = inst.ContinueLoc.clone();
+						player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " build origin has been set to the origin of the current build");   // Talk to the player.
+					}
+					else 	player.sendMessage(ChatColor.RED +  ThisNPC.getName() + " is not currently building!");  
+				}
+				else player.sendMessage(ChatColor.RED + "Unknown origin command"); 
 			}
 			return true;
-		}
-		else if (args[0].equalsIgnoreCase("compare")) {
-			if(!player.hasPermission("builder.compare")) {
-				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
-				return true;
-			}
-			if( inst.schematic == null) {
-				player.sendMessage(ChatColor.RED + "No Schematic Loaded!");   // Talk to the player.
-			}
-			else	player.sendMessage(inst.GetComparisonMatsList((Player)player));   // Talk to the player.
-
-			return true;
-
 		}
 		else if (args[0].equalsIgnoreCase("mark")) {
 			if(!player.hasPermission("builder.mark")) {
@@ -416,10 +540,11 @@ public class Builder extends JavaPlugin {
 				}
 			}
 
+
 			if(mat <= 0)  mat = this.MarkMats.get(0);
 
 			if (inst.StartMark(mat)){
-				sender.sendMessage(format(MarkMessage, ThisNPC, inst.schematic));
+				sender.sendMessage(format(MarkMessage, ThisNPC, inst.schematic, sender,null, "0"));
 			}
 			else {
 				player.sendMessage(ChatColor.RED + ThisNPC.getName() + " could not mark. Already building or no schematic loaded?.");   // Talk to the player.
@@ -436,6 +561,7 @@ public class Builder extends JavaPlugin {
 
 			if (inst.State != net.jrbudda.builder.BuilderTrait.BuilderState.idle) {
 				player.sendMessage(ChatColor.RED + "Please cancel current build before loading new schematic.");
+				return true;
 			}
 
 			if (args.length > 1) {
@@ -450,6 +576,19 @@ public class Builder extends JavaPlugin {
 				String msg = "";
 				File dir= new File(schematicsFolder);
 				File file = new File(dir,arg+".schematic");
+
+				//see if this has already been loaded to another builder
+				for (NPC npc : CitizensAPI.getNPCRegistry()) {
+					if(npc.hasTrait(BuilderTrait.class)){
+						BuilderTrait bt = npc.getTrait(BuilderTrait.class);
+						if (bt.schematic!=null && bt.schematic.Name.equals(arg)){
+							inst.schematic = bt.schematic;		
+						}
+					}					
+				}
+
+				//load it from file if not found.
+				if(inst.schematic==null);
 				try {
 					inst.schematic = MCEditSchematicFormat.load(dir, arg);
 				} catch (Exception e) {
@@ -477,6 +616,66 @@ public class Builder extends JavaPlugin {
 			}
 			return true;
 		}		
+		else if (args[0].equalsIgnoreCase("timeout")) {
+			if(!player.hasPermission("builder.timeout")) {
+				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
+				return true;
+			}
+			if (args.length <= 1) {
+				player.sendMessage(ChatColor.GOLD + ThisNPC.getName() + "'s Move Timeout is " + inst.MoveTimeout);
+				player.sendMessage(ChatColor.GOLD + "Usage: /builder timeout [0.1 - 2000000.0]");
+			}
+			else {
+
+				Double HPs = Double.valueOf(args[1]);
+				if (HPs > 2000000) HPs = 2000000.0;
+				if (HPs <0.0)  HPs =0.1;
+
+				player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " move timeout set to " + HPs + ".");   // Talk to the player.
+				inst.MoveTimeout = HPs;
+
+			}
+
+			return true;
+		}
+		else if (args[0].equalsIgnoreCase("supply")) {
+			if(!player.hasPermission("builder.supply")) {
+				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
+				return true;
+			}
+			if (args.length <= 1) {
+				player.sendMessage(ChatColor.GOLD + ThisNPC.getName() + " currently does" + (inst.RequireMaterials ? "":" NOT") +" need to be supplied with materials." );
+				player.sendMessage(ChatColor.GOLD + "Usage: /builder supply [true/false]");
+			}
+			else {
+
+				Boolean HPs = Boolean.valueOf(args[1]);
+
+				inst.RequireMaterials = HPs;
+				player.sendMessage(ChatColor.GOLD + ThisNPC.getName() + " now does" + (inst.RequireMaterials ? "":" NOT") +" need to be supplied with materials." );
+
+
+			}
+			return true;
+		}
+		else if (args[0].equalsIgnoreCase("hold")) {
+			if(!player.hasPermission("builder.hold")) {
+				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
+				return true;
+			}
+			if (args.length <= 1) {
+				player.sendMessage(ChatColor.GOLD + ThisNPC.getName() + " currently does" + (inst.HoldItems ? "":" NOT") +" hold blocks." );
+				player.sendMessage(ChatColor.GOLD + "Usage: /builder hold [true/false]");
+			}
+			else {
+
+				Boolean HPs = Boolean.valueOf(args[1]);
+				inst.HoldItems = HPs;
+				player.sendMessage(ChatColor.GOLD + ThisNPC.getName() + " now does" + (inst.HoldItems ? "":" NOT") +" hold blocks." );
+
+			}
+			return true;
+		}
 		else if (args[0].equalsIgnoreCase("info")) {
 			if(!player.hasPermission("builder.info")) {
 				player.sendMessage(ChatColor.RED + "You do not have permissions for that command.");
@@ -484,27 +683,33 @@ public class Builder extends JavaPlugin {
 			}
 			player.sendMessage(ChatColor.GOLD + "------- Builder Info for " + ThisNPC.getName() + "------");
 
+			DecimalFormat df=  new DecimalFormat("#");
+
 			if (inst.schematic !=null)			player.sendMessage(ChatColor.GREEN + "Schematic: " + inst.schematic.GetInfo());
 			else player.sendMessage(ChatColor.YELLOW + "No schematic loaded.");
-			if(inst.Origin ==null)player.sendMessage(ChatColor.GREEN + "Origin: My Location");
-			else player.sendMessage(ChatColor.GREEN + "Origin: " + inst.Origin.toString());
 
-			player.sendMessage(ChatColor.GREEN + "Status: " + inst.State);
-		
+			if(inst.Origin ==null)player.sendMessage(ChatColor.GREEN + "Origin: " +ChatColor.WHITE +"My Location");
+			else player.sendMessage(ChatColor.GREEN + "Origin: " +ChatColor.WHITE + " x:" + inst.Origin.getBlockX()+ " y:" + inst.Origin.getBlockY()+ " z:" + inst.Origin.getBlockZ());
+
+			player.sendMessage(ChatColor.GREEN + "Status: " + ChatColor.WHITE + inst.State + " §aTimeout:§f " + inst.MoveTimeout);
+			player.sendMessage(ChatColor.GREEN + "Require Mats: " + ChatColor.WHITE + inst.RequireMaterials + " §aHold Items:§f " + inst.HoldItems);
+
 			if (inst.State == net.jrbudda.builder.BuilderTrait.BuilderState.building){
-				player.sendMessage(ChatColor.GREEN + "Build Pattern XZ: " + inst.BuildPatternXY + " Build Pattern Y: onelayer");
-				player.sendMessage(ChatColor.GREEN + "Ignore Air: " + inst.IgnoreAir + "  Ignore Liquid: " + inst.IgnoreLiquid);
-				player.sendMessage(ChatColor.GREEN + "Hold Items: " + inst.HoldItems + "  Excavte: " + inst.Excavate);
-				player.sendMessage(ChatColor.GREEN + "On Complete: " + inst.oncomplete + "  On Cancel: " + inst.oncancel);
-				player.sendMessage(ChatColor.GREEN + "% Complete: Ehh it's done when it's done, buddy");
+				player.sendMessage(ChatColor.BLUE + "Location: " +ChatColor.WHITE + " x:" + inst.ContinueLoc.getBlockX()+ " y:" + inst.ContinueLoc.getBlockY()+ " z:" + inst.ContinueLoc.getBlockZ());
+				player.sendMessage(ChatColor.BLUE + "Build Pattern XZ: " + ChatColor.WHITE +inst.BuildPatternXY + ChatColor.BLUE + " Build Y Layers: " + ChatColor.WHITE +inst.BuildYLayers);
+				player.sendMessage(ChatColor.BLUE + "Ignore Air: " + ChatColor.WHITE +inst.IgnoreAir +ChatColor.BLUE +  "  Ignore Liquid: " + ChatColor.WHITE +inst.IgnoreLiquid);
+				player.sendMessage(ChatColor.BLUE + "Hold Items: " + ChatColor.WHITE +inst.HoldItems +ChatColor.BLUE +  "  Excavte: " +ChatColor.WHITE + inst.Excavate);
+				player.sendMessage(ChatColor.BLUE + "On Complete: " + ChatColor.WHITE +inst.oncomplete + ChatColor.BLUE + "  On Cancel: " +ChatColor.WHITE + inst.oncancel);
+				player.sendMessage(ChatColor.BLUE + "On Start: " + ChatColor.WHITE +inst.onStart);
+				long c = inst.startingcount;
+				player.sendMessage(ChatColor.BLUE + "Blocks: Total: " + ChatColor.WHITE + c + ChatColor.BLUE + "  Remaining: " + ChatColor.WHITE + inst.Q.size());
+				double percent = ((double)(c-inst.Q.size()) / (double)c)* 100;
+				player.sendMessage(ChatColor.BLUE + "Complete: " +ChatColor.WHITE + String.format("%1$.1f", percent)+ "%");
 			}	
-
 			return true;
 		}
-
 		return false;
 	}
-
 	private int getMat(String S){
 		int item = -1;
 
@@ -526,13 +731,19 @@ public class Builder extends JavaPlugin {
 	}
 
 	private void reloadMyConfig(){
+		this.saveDefaultConfig();
 		this.reloadConfig();
 		schematicsFolder = getConfig().getString("SchematicsFolder",this.getDataFolder() + File.separator + "schematics" + File.separator);
 		CompleteMessage = getConfig().getString("DefaultTexts.BuildComplete","");
 		CancelMessage = getConfig().getString("DefaultTexts.BuildCanceled","");
 		StartedMessage = getConfig().getString("DefaultTexts.BuildStarted","");
+		CollectingMessage =  getConfig().getString("DefaultTexts.BuildCollecting","");
 		MarkMessage = getConfig().getString("DefaultTexts.Mark","");
-	
+		SurveyMessage = getConfig().getString("DefaultTexts.Survey","");
+		SupplyListMessage = getConfig().getString("DefaultTexts.Supply_List","");
+		SupplyNeedMessage = getConfig().getString("DefaultTexts.Supply_Need_Item","");
+		SupplyDontNeedMessage = getConfig().getString("DefaultTexts.Supply_Dont_Need_Item","");
+		SupplyTakenMessage = getConfig().getString("DefaultTexts.Supply_Item_Taken","");
 		for (String M:getConfig().getStringList("MarkMaterials")){
 			if (getMat(M) > 0) this.MarkMats.add(getMat(M));
 		}
@@ -541,8 +752,14 @@ public class Builder extends JavaPlugin {
 
 	}
 
-	public String format(String input, NPC npc, BuilderSchematic schem){
-		return input.replace("<NPC>",npc.getName()).replace("<SCHEMATIC>",schem.Name);
+	public String format(String input, NPC npc, BuilderSchematic schem, CommandSender player, String item, String amount){
+		input = input.replace("<NPC>",npc.getName());
+		input = input.replace("<SCHEMATIC>", schem == null ? "" : schem.Name);
+		input = input.replace("<PLAYER>", player == null ? "" : player.getName());
+		input = input.replace("<ITEM>", item == null ? "" : item);
+		input = input.replace("<AMOUNT>", amount.toString());
+		input =	ChatColor.translateAlternateColorCodes('&', input);
+		return input;
 	}
 
 }

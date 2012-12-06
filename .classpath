@@ -4,9 +4,10 @@
 	<classpathentry kind="lib" path="C:/Minecraft/BukkitAPI.jar"/>
 	<classpathentry kind="lib" path="C:/Minecraft/citizensapi-2.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="C:/Minecraft/craftbukkit.jar"/>
-	<classpathentry kind="lib" path="C:/Minecraft/plugins/citizens-2.0.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="C:/Minecraft/denizen-0.75-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="C:/Minecraft/dynmap-api.jar"/>
+	<classpathentry kind="lib" path="C:/Minecraft/plugins/Citizens2.jar"/>
+	<classpathentry kind="lib" path="C:/Minecraft/minecraft_server.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
