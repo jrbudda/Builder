@@ -7,8 +7,6 @@ import java.rmi.activation.ActivationException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
-//import java.util.Map;
 import java.util.logging.Level;
 
 import net.citizensnpcs.Citizens;
@@ -221,7 +219,7 @@ public class Builder extends JavaPlugin {
 			StringBuilder sb = new StringBuilder();
 			
 			for (int j = 1; j < 137; j++) {
-				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
+				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.v1_4_6.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_4_6.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
 		     }
 
 			java.io.File f = new File("mats.txt");

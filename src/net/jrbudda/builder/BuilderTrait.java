@@ -3,32 +3,27 @@ package net.jrbudda.builder;
 import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 
+import net.citizensnpcs.api.exception.NPCLoadException;
+import net.citizensnpcs.api.trait.Trait;
+import net.citizensnpcs.api.util.DataKey;
+import net.citizensnpcs.trait.Toggleable;
+
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.MemorySection;
-import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 import org.dynmap.DynmapCommonAPI;
-
-import net.citizensnpcs.api.exception.NPCLoadException;
-
-import net.citizensnpcs.api.trait.Trait;
-import net.citizensnpcs.api.util.DataKey;
-import net.citizensnpcs.trait.Toggleable;
-import net.minecraft.server.Packet;
-import net.minecraft.server.Packet18ArmAnimation;
 
 public class BuilderTrait extends Trait implements Toggleable {
 
@@ -131,8 +126,6 @@ public class BuilderTrait extends Trait implements Toggleable {
 			}
 		}
 
-		anim = new Packet18ArmAnimation( ((CraftEntity)npc.getBukkitEntity()).getHandle(),1);
-
 		npc.getNavigator().getDefaultParameters().avoidWater(false);
 
 		if (State == BuilderState.building || State ==BuilderState.collecting){
@@ -232,7 +225,6 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	public	 Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
 
-	Packet anim = null;
 	public enum BuilderState {idle, building, marking, collecting};
 	public enum BuildPatternsXZ {spiral, reversespiral, linear, reverselinear};
 	private boolean clearingMarks = false;
@@ -611,11 +603,11 @@ public class BuilderTrait extends Trait implements Toggleable {
 			//change block
 			if (!b){
 				pending.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
-				if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity)	net.citizensnpcs.util.Util.sendPacketNearby(npc.getBukkitEntity().getLocation(),anim , 64);	
+				if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.Player)	{
+					net.citizensnpcs.util.PlayerAnimation.ARM_SWING.play((Player) this.npc.getBukkitEntity(), 64);
+					}
 			}
-
 			//arm swing
-
 		}
 
 		if (marks.size()==0) clearingMarks = false;
@@ -631,14 +623,14 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if(base ==null ) return null;
 
 		for (int a=3; a>=-5;a--){
-			if(canStand(base.getRelative(0, a, -1))) return  base.getRelative(0, a-1, -1).getLocation();
-			if(canStand(base.getRelative(0, a, 1))) return  base.getRelative(0, a-1, 1).getLocation();
-			if(canStand(base.getRelative(1, a, 0))) return  base.getRelative(1, a-1, 0).getLocation();
-			if(canStand(base.getRelative(-1, a, 0))) return  base.getRelative(-1, a-1, 0).getLocation();
-			if(canStand(base.getRelative(-1, a, -1))) return  base.getRelative(-1, a-1, -1).getLocation();
-			if(canStand(base.getRelative(-1, a, 1))) return  base.getRelative(-1, a-1, 1).getLocation();
-			if(canStand(base.getRelative(1, a, 1))) return  base.getRelative(1, a-1, 1).getLocation();
-			if(canStand(base.getRelative(1, a, -1))) return  base.getRelative(1, a-1, -1).getLocation();
+			if(Util.canStand(base.getRelative(0, a, -1))) return  base.getRelative(0, a-1, -1).getLocation();
+			if(Util.canStand(base.getRelative(0, a, 1))) return  base.getRelative(0, a-1, 1).getLocation();
+			if(Util.canStand(base.getRelative(1, a, 0))) return  base.getRelative(1, a-1, 0).getLocation();
+			if(Util.canStand(base.getRelative(-1, a, 0))) return  base.getRelative(-1, a-1, 0).getLocation();
+			if(Util.canStand(base.getRelative(-1, a, -1))) return  base.getRelative(-1, a-1, -1).getLocation();
+			if(Util.canStand(base.getRelative(-1, a, 1))) return  base.getRelative(-1, a-1, 1).getLocation();
+			if(Util.canStand(base.getRelative(1, a, 1))) return  base.getRelative(1, a-1, 1).getLocation();
+			if(Util.canStand(base.getRelative(1, a, -1))) return  base.getRelative(1, a-1, -1).getLocation();
 		}
 
 
@@ -646,15 +638,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	}
 
-	private boolean canStand(Block base){
-		Block below = base.getRelative(0, -1, 0);
-		if(!below.isEmpty() && net.minecraft.server.Block.byId[below.getTypeId()].material.isSolid()){
-			if(base.isEmpty() || net.minecraft.server.Block.byId[base.getTypeId()].material.isSolid()==false){
-				return true;
-			}
-		}
-		return false;
-	}
+
 
 
 }

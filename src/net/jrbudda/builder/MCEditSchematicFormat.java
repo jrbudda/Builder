@@ -21,7 +21,7 @@ import org.bukkit.util.Vector;
 
 
 public class MCEditSchematicFormat {
-	private static final int MAX_SIZE = Short.MAX_VALUE - Short.MIN_VALUE;
+	//private static final int MAX_SIZE = Short.MAX_VALUE - Short.MIN_VALUE;
 
 	public static  BuilderSchematic load(File path, String filename) throws IOException, Exception {
 

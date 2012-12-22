@@ -8,10 +8,15 @@ import java.util.Queue;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import net.minecraft.server.LocaleI18n;
+////
+import net.minecraft.server.v1_4_6.Block;
+import net.minecraft.server.v1_4_6.Item;
+import net.minecraft.server.v1_4_6.LocaleI18n;
+////
+
 
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
+
 
 public class Util {
 
@@ -36,16 +41,16 @@ public class Util {
 		try {
 			if (MatId==0) return  "Air";
 			if(MatId < 256){
-				net.minecraft.server.Block b =net.minecraft.server.Block.byId[MatId];
-				if ( MatId == 6)  return net.minecraft.server.LocaleI18n.get("tile.sapling.oak.name");
-				if ( MatId == 21)  return net.minecraft.server.LocaleI18n.get("item.dyePowder.blue.name");
-				if ( MatId == 44)  return net.minecraft.server.LocaleI18n.get("tile.stoneSlab.stone.name");
-				if ( MatId == 126)  return net.minecraft.server.LocaleI18n.get("tile.stoneSlab.wood.name");
-				if ( MatId == 126)  return net.minecraft.server.LocaleI18n.get("tile.stoneSlab.wood.name");
+				Block b =Block.byId[MatId];
+				if ( MatId == 6)  return LocaleI18n.get("tile.sapling.oak.name");
+				if ( MatId == 21)  return LocaleI18n.get("item.dyePowder.blue.name");
+				if ( MatId == 44)  return LocaleI18n.get("tile.stoneSlab.stone.name");
+				if ( MatId == 126)  return LocaleI18n.get("tile.stoneSlab.wood.name");
+				if ( MatId == 126)  return LocaleI18n.get("tile.stoneSlab.wood.name");
 				return	b.getName();
 			}
 			else{
-				net.minecraft.server.Item b =net.minecraft.server.Item.byId[MatId];
+				Item b =Item.byId[MatId];
 				return LocaleI18n.get(b.getName() + ".name");
 			}
 		} catch (Exception e) {
@@ -300,7 +305,7 @@ public class Util {
 				item = 70;
 				break;
 			default:
-			item =net.minecraft.server.Block.byId[item] !=null ? net.minecraft.server.Block.byId[item].getDropType(b.mat.getData(), R,-10000) : item;
+				item =Block.byId[item] !=null ? Block.byId[item].getDropType(b.mat.getData(), R,-10000) : item;
 				break;
 			}
 
@@ -319,6 +324,17 @@ public class Util {
 		}while(true);
 
 		return out;
+	}
+
+
+	static boolean canStand(org.bukkit.block.Block base){
+		org.bukkit.block.Block below = base.getRelative(0, -1, 0);
+		if(!below.isEmpty() && Block.byId[below.getTypeId()].material.isSolid()){
+			if(base.isEmpty() || Block.byId[base.getTypeId()].material.isSolid()==false){
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

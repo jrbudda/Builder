@@ -1,7 +1,6 @@
 package net.jrbudda.builder;
 
 import org.bukkit.Location;
-import org.bukkit.block.Block;
 
 import net.citizensnpcs.api.ai.Navigator;
 import net.citizensnpcs.api.ai.StuckAction;
