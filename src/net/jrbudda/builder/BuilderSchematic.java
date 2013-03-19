@@ -26,8 +26,8 @@ public class BuilderSchematic {
 	}
 
 	public Queue<BuildBlock> CreateMarks(double i, double j, double k, int mat){
-		dwidth = i-1;
-		dlength = k-1;
+		dwidth = i;
+		dlength = k;
 		Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
 		Q.clear();
 		BuildBlock a = new BuildBlock();
@@ -55,9 +55,11 @@ public class BuilderSchematic {
 
 
 	public Location offset(BuildBlock block, Location origin){
-		return new Location(origin.getWorld(),block.X - this.dwidth/2 + origin.getX(),block.Y - yoffset +useryoffset + origin.getY(),block.Z - this.dlength/2 + origin.getZ());
+		
+		return new Location(origin.getWorld(),block.X - this.dwidth/2 + origin.getBlockX() + 1,block.Y - yoffset +useryoffset + origin.getBlockY()+.5,block.Z - this.dlength/2 + origin.getBlockZ() + 1 );
 	}
 
+	
 	int yoffset = 0;
 	int useryoffset = 0;
 
@@ -91,7 +93,7 @@ public class BuilderSchematic {
 		Queue<BuildBlock> Decor = new LinkedList<BuildBlock>();
 		Queue<BuildBlock> buildQ = new LinkedList<BuildBlock>();
 
-		long count = 0;
+	//	long count = 0;
 
 		for(int y = yoffset;y<height();y+=ylayers){
 
@@ -114,7 +116,7 @@ public class BuilderSchematic {
 				break;
 			}
 
-			count+=thisLayer.size();
+		//	count+=thisLayer.size();
 
 			for(BuildBlock b:thisLayer){
 				//check if it needs to be placed.

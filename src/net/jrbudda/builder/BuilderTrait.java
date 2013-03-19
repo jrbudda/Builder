@@ -19,7 +19,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.MemorySection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
@@ -71,18 +70,18 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		try {
 			if(key.keyExists("NeededMaterials")){
-				org.bukkit.configuration.MemorySection derp = (MemorySection) key.getRaw("NeededMaterials");
+				org.bukkit.configuration.MemorySection derp = (org.bukkit.configuration.MemorySection) key.getRaw("NeededMaterials");
 				Set<String> keys = derp.getKeys(false);
 				for (String k : keys){
 					NeededMaterials.put(Integer.valueOf(k),derp.getInt(k));
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 		}
 
 		Yoffset = key.getInt("YOffset");
-		IgnoreProtection = key.getBoolean("IgnoreProtection", plugin.getConfig().getBoolean("DefaultOptions.IgnoreProtection"));
+		BuildYLayers = key.getInt("YLayers");
+
 		MoveTimeout = key.getDouble("MoveTimeoutSeconds", plugin.getConfig().getDouble("DefaultOptions.MoveTimeoutSeconds",2.0));
 		if(MoveTimeout < .1) MoveTimeout = .1;
 
@@ -157,7 +156,11 @@ public class BuilderTrait extends Trait implements Toggleable {
 		key.setBoolean("RequireMaterials",RequireMaterials);
 		key.setDouble("MoveTimeoutSeconds", MoveTimeout);
 		key.setInt("YOffset", Yoffset);
-		key.setRaw("NeededMaterials",NeededMaterials);
+		key.setInt("YLayers", BuildYLayers);
+		
+		if (NeededMaterials.size() > 0)  key.setRaw("NeededMaterials",NeededMaterials);
+		else if (key.keyExists("NeededMaterials")) key.removeKey("NeededMaterials");
+		
 		if(oncancel!=null) key.setString("oncancel", oncancel);
 		else if(key.keyExists("oncancel")) key.removeKey("oncancel");
 
@@ -218,7 +221,6 @@ public class BuilderTrait extends Trait implements Toggleable {
 	public Integer BuildYLayers = 1;
 	public Integer Yoffset = 0;
 	public BuildPatternsXZ BuildPatternXY = BuildPatternsXZ.spiral;
-	public Boolean IgnoreProtection = false;
 	public double MoveTimeout = 2.0;
 
 	public Map<Integer, Integer> NeededMaterials = new HashMap<Integer, Integer>();
@@ -241,7 +243,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if (Origin !=null) start = Origin.clone(); 
 		else if (ContinueLoc!=null) start = ContinueLoc.clone();
 		else start = npc.getBukkitEntity().getLocation().clone();
-		
+
 		try {
 			NeededMaterials = Util.MaterialsList(schematic.BuildQueue(start, true, true, excavate, BuildPatternsXZ.linear ,false , 1,0));
 
@@ -342,14 +344,19 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		this.State = BuilderState.building;
 
+		NeededMaterials.clear();
+		
 		sender.sendMessage(plugin.format(plugin.StartedMessage, npc,schematic, player, null, "0"));
 
 		if (onStart!=null){
 			String resp = plugin.runTask(onStart, npc);
-			if (resp ==null) sender.sendMessage("Task " + onStart + "started");
-			else sender.sendMessage("Task " + onStart + " could not be started: " + resp);				
+			if (resp ==null) sender.sendMessage("Task " + onStart + " completed.");
+			else sender.sendMessage("Task " + onStart + " could not be run: " + resp);				
 		}
 
+		plugin.DenizenAction(npc, "Build Start");
+		plugin.DenizenAction(npc, "Build " + schematic.Name + " Start");
+		
 		SetupNextBlock();
 
 		return true;
@@ -492,11 +499,13 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	}
 
-
 	int dirz = 1, dirx = 1;
 
 	public void CancelBuild(){
 		if (oncancel!=null) plugin.runTask(oncancel, npc);
+		plugin.DenizenAction(npc, "Build Cancel");
+		if(schematic !=null)  plugin.DenizenAction(npc, "Build " + schematic.Name + " Cancel");
+		
 		stop();
 	}
 
@@ -508,9 +517,12 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 			if (oncomplete!=null){
 				String resp = plugin.runTask(oncomplete, npc);
-				if (resp ==null) sender.sendMessage("Task " + oncomplete + "started");
-				else sender.sendMessage("Task " + oncomplete + " could not be started: " + resp);				
+				if (resp ==null) sender.sendMessage("Task " + oncomplete + " completed.");
+				else sender.sendMessage("Task " + oncomplete + " could not be run: " + resp);				
 			}
+			
+			plugin.DenizenAction(npc, "Build Complete");
+			plugin.DenizenAction(npc, "Build " + schematic.Name + " Complete");
 		}
 
 		stop ();
@@ -605,7 +617,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 				pending.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
 				if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.Player)	{
 					net.citizensnpcs.util.PlayerAnimation.ARM_SWING.play((Player) this.npc.getBukkitEntity(), 64);
-					}
+				}
 			}
 			//arm swing
 		}

@@ -6,8 +6,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="C:/Minecraft/dynmap-api.jar"/>
 	<classpathentry kind="lib" path="C:/Minecraft/plugins/Citizens2.jar"/>
-	<classpathentry kind="lib" path="C:/Minecraft/minecraft_server.jar"/>
 	<classpathentry kind="lib" path="C:/Minecraft/CitizensAPI.jar"/>
-	<classpathentry kind="lib" path="C:/Minecraft/denizen-0.76-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="C:/Minecraft/denizen-0.8-PRERELEASE.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

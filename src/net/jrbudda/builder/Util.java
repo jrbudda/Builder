@@ -9,9 +9,9 @@ import java.util.Map.Entry;
 import java.util.Random;
 
 ////
-import net.minecraft.server.v1_4_6.Block;
-import net.minecraft.server.v1_4_6.Item;
-import net.minecraft.server.v1_4_6.LocaleI18n;
+import net.minecraft.server.v1_5_R1.Block;
+import net.minecraft.server.v1_5_R1.Item;
+import net.minecraft.server.v1_5_R1.LocaleI18n;
 ////
 
 

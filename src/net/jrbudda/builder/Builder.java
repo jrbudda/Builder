@@ -4,11 +4,11 @@ package net.jrbudda.builder;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.activation.ActivationException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
+import net.aufdemrand.denizen.Denizen;
 import net.citizensnpcs.Citizens;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
@@ -70,8 +70,6 @@ public class Builder extends JavaPlugin {
 	}
 
 
-
-
 	public BuilderTrait getBuilder(Entity ent){
 		if( ent == null) return null;
 		NPC npc = net.citizensnpcs.api.CitizensAPI.getNPCRegistry().getNPC(ent);
@@ -95,28 +93,71 @@ public class Builder extends JavaPlugin {
 	//***Denizen Hook
 	private Plugin denizen = null;
 
-
 	private void setupDenizenHook() throws ActivationException {
 		denizen = this.getServer().getPluginManager().getPlugin("Denizen");
 		if (denizen != null) {
 			if (denizen.isEnabled()) {
+				String vers = denizen.getDescription().getVersion();
+				if(vers.contains("0.7")) {
+					//	net.aufdemrand.sentry.denizen.v7.Util.setupDenizenHook(DieLikePlayers);
+					getLogger().log(Level.WARNING, "Builder is no longer compatible with Denizen .7");
+					denizen =null;
+				}
+				else if(vers.contains("0.8")){
+					//ok
+				}
 			}
 			else denizen =null;
 		}
 	}
+
+	//		public String runTask(String taskname, NPC npc){
+	//			if(denizen==null) return "Denizen plugin not found!";
+	//			net.aufdemrand.denizen.npc.DenizenNPC dnpc = ((net.aufdemrand.denizen.Denizen)denizen).getDenizenNPCRegistry().getDenizen(npc);
+	//			if (dnpc ==null) return "NPC is not a Denizen!";
+	//			net.aufdemrand.denizen.scripts.ScriptHelper sE = ((net.aufdemrand.denizen.Denizen)denizen).getScriptEngine().helper;
+	//			List<String> theScript = sE.getScript(taskname + ".Script");
+	//			if (theScript.isEmpty()) return "Empty Script!";
+	//			sE.queueScriptEntries(dnpc, sE.buildScriptEntries(dnpc, theScript, taskname), net.aufdemrand.denizen.scripts.ScriptEngine.QueueType.ACTIVITY);
+	//			return null;
+	//		}
+	//	
+
+
 	public String runTask(String taskname, NPC npc){
-		if(denizen==null) return "Denizen plugin not found!";
-		net.aufdemrand.denizen.npc.DenizenNPC dnpc = ((net.aufdemrand.denizen.Denizen)denizen).getDenizenNPCRegistry().getDenizen(npc);
-		if (dnpc ==null) return "NPC is not a Denizen!";
-		net.aufdemrand.denizen.scripts.ScriptHelper sE = ((net.aufdemrand.denizen.Denizen)denizen).getScriptEngine().helper;
-		List<String> theScript = sE.getScript(taskname + ".Script");
-		if (theScript.isEmpty()) return "Empty Script!";
-
-		sE.queueScriptEntries(dnpc, sE.buildScriptEntries(dnpc, theScript, taskname), net.aufdemrand.denizen.scripts.ScriptEngine.QueueType.ACTIVITY);
-
-		return null;
+		return runTaskv8(taskname, npc);
 	}
-	//
+
+	private String runTaskv8(String taskname, NPC npc){
+		try {
+			if(denizen==null) return "Denizen plugin not found!";	
+			net.aufdemrand.denizen.npc.dNPC dnpc = net.aufdemrand.denizen.utilities.DenizenAPI.getDenizenNPC(npc);
+			net.aufdemrand.denizen.scripts.containers.core.TaskScriptContainer task = net.aufdemrand.denizen.scripts.ScriptRegistry.getScriptContainerAs(taskname, net.aufdemrand.denizen.scripts.containers.core.TaskScriptContainer.class);
+			if (task !=null){
+				task.runTaskScript(null, dnpc, null);
+			}
+			else return "Task: " + taskname + " was not found!";
+			return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Error while executing task: " + e.getMessage();
+		}
+	}
+
+
+	public void DenizenAction(NPC npc, String action){
+		if(denizen!=null){
+			try {
+				if(npc.hasTrait(net.aufdemrand.denizen.npc.traits.AssignmentTrait.class)){
+					net.aufdemrand.denizen.npc.dNPC dnpc = ((Denizen)denizen).getNPCRegistry().getDenizen(npc);
+					dnpc.action(action, null);			
+				}
+			} catch (Exception e) {
+				getLogger().log(Level.WARNING, "Error running action!");
+				e.printStackTrace();
+			}		
+		}
+	}
 
 	@Override
 	public void onDisable() {
@@ -214,13 +255,13 @@ public class Builder extends JavaPlugin {
 			return true;
 		}
 		else if (args[0].equalsIgnoreCase("testmats")) {
-			java.util.Queue<BuildBlock> q = new java.util.LinkedList<BuildBlock>();
-		
+		//	java.util.Queue<BuildBlock> q = new java.util.LinkedList<BuildBlock>();
+
 			StringBuilder sb = new StringBuilder();
-			
+
 			for (int j = 1; j < 137; j++) {
-				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.v1_4_6.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_4_6.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
-		     }
+				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.v1_5_R1.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_5_R1.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
+			}
 
 			java.io.File f = new File("mats.txt");
 			java.io.FileWriter fw;
@@ -229,7 +270,6 @@ public class Builder extends JavaPlugin {
 				fw.write(sb.toString());
 				fw.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return true;
@@ -681,7 +721,7 @@ public class Builder extends JavaPlugin {
 			}
 			player.sendMessage(ChatColor.GOLD + "------- Builder Info for " + ThisNPC.getName() + "------");
 
-			DecimalFormat df=  new DecimalFormat("#");
+		//	DecimalFormat df=  new DecimalFormat("#");
 
 			if (inst.schematic !=null)			player.sendMessage(ChatColor.GREEN + "Schematic: " + inst.schematic.GetInfo());
 			else player.sendMessage(ChatColor.YELLOW + "No schematic loaded.");

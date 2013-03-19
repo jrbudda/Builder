@@ -33,7 +33,7 @@ public class MCEditSchematicFormat {
 		NBTInputStream nbtStream = new NBTInputStream(new java.util.zip.GZIPInputStream(stream));
 
 		Vector origin = new Vector();
-		Vector offset = new Vector();
+	//	Vector offset = new Vector();
 
 		// Schematic tag
 		CompoundTag schematicTag = (CompoundTag) nbtStream.readTag();
@@ -65,10 +65,10 @@ public class MCEditSchematicFormat {
 		}
 
 		try {
-			int offsetX = getChildTag(schematic, "WEOffsetX", IntTag.class).getValue();
-			int offsetY = getChildTag(schematic, "WEOffsetY", IntTag.class).getValue();
-			int offsetZ = getChildTag(schematic, "WEOffsetZ", IntTag.class).getValue();
-			offset = new Vector(offsetX, offsetY, offsetZ);
+		//	int offsetX = getChildTag(schematic, "WEOffsetX", IntTag.class).getValue();
+		//	int offsetY = getChildTag(schematic, "WEOffsetY", IntTag.class).getValue();
+		//	int offsetZ = getChildTag(schematic, "WEOffsetZ", IntTag.class).getValue();
+		//	offset = new Vector(offsetX, offsetY, offsetZ);
 		} catch (Exception e) {
 			// No offset data
 		}
