@@ -55,11 +55,11 @@ public class BuilderSchematic {
 
 
 	public Location offset(BuildBlock block, Location origin){
-		
+
 		return new Location(origin.getWorld(),block.X - this.dwidth/2 + origin.getBlockX() + 1,block.Y - yoffset +useryoffset + origin.getBlockY()+.5,block.Z - this.dlength/2 + origin.getBlockZ() + 1 );
 	}
 
-	
+
 	int yoffset = 0;
 	int useryoffset = 0;
 
@@ -93,7 +93,7 @@ public class BuilderSchematic {
 		Queue<BuildBlock> Decor = new LinkedList<BuildBlock>();
 		Queue<BuildBlock> buildQ = new LinkedList<BuildBlock>();
 
-	//	long count = 0;
+		//	long count = 0;
 
 		for(int y = yoffset;y<height();y+=ylayers){
 
@@ -116,7 +116,7 @@ public class BuilderSchematic {
 				break;
 			}
 
-		//	count+=thisLayer.size();
+			//	count+=thisLayer.size();
 
 			for(BuildBlock b:thisLayer){
 				//check if it needs to be placed.
@@ -131,9 +131,9 @@ public class BuilderSchematic {
 				}
 
 				org.bukkit.Material m = b.mat.getItemType();
-				
+
 				if (m==null) continue;
-				
+
 				switch (m) {
 				case AIR:
 					//first
@@ -148,18 +148,20 @@ public class BuilderSchematic {
 					break;
 				case TORCH:	case PAINTING:	case SNOW: 	case WATER_LILY: case CACTUS: case SUGAR_CANE_BLOCK: case PUMPKIN: case PUMPKIN_STEM: case PORTAL: case CAKE_BLOCK: case VINE: case NETHER_WARTS: case LEAVES:
 				case SAPLING :case DEAD_BUSH: case WEB: case LONG_GRASS: case RED_ROSE: case YELLOW_FLOWER: case RED_MUSHROOM: case BROWN_MUSHROOM: case FIRE: case CROPS: case MELON_BLOCK: case MELON_STEM: case ENDER_PORTAL:
-				case JACK_O_LANTERN:
+				case JACK_O_LANTERN: case CARROT: case POTATO: case SKULL:
 					//very last
 					Decor.add(b);
 					break;
 				case REDSTONE_TORCH_ON:	case REDSTONE_TORCH_OFF: case REDSTONE_WIRE: case REDSTONE_LAMP_OFF: case REDSTONE_LAMP_ON: case LEVER: case TRIPWIRE_HOOK: case TRIPWIRE: case STONE_BUTTON: case DIODE_BLOCK_OFF:
-				case DIODE_BLOCK_ON: case DIODE: case RAILS: case POWERED_RAIL: case DETECTOR_RAIL: case PISTON_BASE: case PISTON_EXTENSION: case PISTON_MOVING_PIECE: case PISTON_STICKY_BASE: case TNT: case STONE_PLATE: case WOOD_PLATE: case GLOWSTONE:
+				case DIODE_BLOCK_ON: case DAYLIGHT_DETECTOR: case DIODE: case RAILS: case REDSTONE_COMPARATOR_ON: case REDSTONE_COMPARATOR_OFF: case POWERED_RAIL: case DETECTOR_RAIL: case ACTIVATOR_RAIL: case PISTON_BASE: 
+				case PISTON_EXTENSION: case PISTON_MOVING_PIECE: case PISTON_STICKY_BASE: case TNT: case STONE_PLATE: case WOOD_PLATE: case GLOWSTONE:	case HOPPER: case REDSTONE_BLOCK:  case GOLD_PLATE: case IRON_PLATE:
+				case WOOD_BUTTON: 
 					//4th
 					redstone.add(b);
 					break;
 				case FURNACE:case BURNING_FURNACE:	case BREWING_STAND: case CHEST: case JUKEBOX: case CAULDRON: case WOOD_DOOR: case WOODEN_DOOR: case IRON_DOOR: case LOCKED_CHEST: case TRAP_DOOR: case ENCHANTMENT_TABLE:
 				case DISPENSER: case WORKBENCH: case SOIL: case SIGN_POST: case WALL_SIGN: case LADDER: case FENCE: case FENCE_GATE: case IRON_FENCE: case THIN_GLASS: case NETHER_FENCE: case DRAGON_EGG: case BED_BLOCK:case GLASS:
-				case BIRCH_WOOD_STAIRS: case JUNGLE_WOOD_STAIRS: case WOOD_STAIRS: case SPRUCE_WOOD_STAIRS: 
+				case BIRCH_WOOD_STAIRS: case JUNGLE_WOOD_STAIRS: case WOOD_STAIRS: case SPRUCE_WOOD_STAIRS: case QUARTZ_STAIRS: case TRAPPED_CHEST: case ANVIL: case FLOWER_POT: 
 					//3rd
 					furniture.add(b);
 					break;

@@ -9,9 +9,9 @@ import java.util.Map.Entry;
 import java.util.Random;
 
 ////
-import net.minecraft.server.v1_5_R1.Block;
-import net.minecraft.server.v1_5_R1.Item;
-import net.minecraft.server.v1_5_R1.LocaleI18n;
+import net.minecraft.server.v1_5_R3.Block;
+import net.minecraft.server.v1_5_R3.Item;
+import net.minecraft.server.v1_5_R3.LocaleI18n;
 ////
 
 
@@ -218,7 +218,7 @@ public class Util {
 
 	static Random R = new java.util.Random();
 
-	public static Map<Integer, Integer> MaterialsList(Queue<BuildBlock> Q) throws Exception{
+	public static Map<Integer, Integer> MaterialsList(Queue<BuildBlock> Q, boolean RequireUnobtainable) throws Exception{
 
 		Map<Integer, Integer> out = new HashMap<Integer, Integer>();
 
@@ -228,86 +228,99 @@ public class Util {
 
 			if (b==null) break;
 			int item = b.mat.getItemTypeId();
-
 			int addamt = 1;
 
-			switch (item){
-			case 0:
-				//air
-				continue;
-			case 90:
-				//portal
-				continue;
-			case 97:
-				//silverfish egg
-				continue;
-			case 95:
-				//locked chest
-				item = 54;
-			case 78:
-				// snow
-				continue;
-			case 34:
-				// piston head
-				continue;
-			case 119:
-				// end portal
-				continue;
-			case 80:
-				//snow block
-				break;
-			case 92:
-				//cake
-				item = 354;
-				break;
-			case 43: case 125:
-				//double slabs
-				item +=1;
-				addamt = 2;
-				break;
-			case 20:
-				//glass
-				break;
-			case 102:
-				//glass pane
-				break;
-			case 47:
-				//bookshelf
-				break;
-			case 103:
-				//melon
-				item = 362;
-				break;
-			case 130:
-				//ender chest
-				break;
-			case 134: case 135: case 136:
-				//wood stairs
-				item = 53;
-				break;
-			case 128: case 109: case 108:
-				//stone staitr;
-				item = 67;
-				break;
-			case 79:
-				//ice
-				item = 332;
-				break;
-			case 51:
-				//fire
-				continue;
-			case 59:
-				//crops
-				item = 295;
-				break;
-			case 72:
-				//pressure plate
-				item = 70;
-				break;
-			default:
-				item =Block.byId[item] !=null ? Block.byId[item].getDropType(b.mat.getData(), R,-10000) : item;
-				break;
+
+			if (RequireUnobtainable){
+				switch (item){
+				case 0:
+					//air
+					continue;
+				case 90:
+					//portal
+					continue;
+				}
 			}
+			else {
+				switch (item){
+				case 0:
+					//air
+					continue;
+				case 90:
+					//portal
+					continue;
+				case 97:
+					//silverfish egg
+					continue;
+				case 95:
+					//locked chest
+					item = 54;
+				case 78:
+					// snow
+					continue;
+				case 34:
+					// piston head
+					continue;
+				case 119:
+					// end portal
+					continue;
+				case 80:
+					//snow block
+					break;
+				case 92:
+					//cake
+					item = 354;
+					break;
+				case 43: case 125:
+					//double slabs
+					item +=1;
+					addamt = 2;
+					break;
+				case 20:
+					//glass
+					break;
+				case 102:
+					//glass pane
+					break;
+				case 47:
+					//bookshelf
+					break;
+				case 103:
+					//melon
+					item = 362;
+					break;
+				case 130:
+					//ender chest
+					break;
+				case 134: case 135: case 136:
+					//wood stairs
+					item = 53;
+					break;
+				case 128: case 109: case 108:
+					//stone staitr;
+					item = 67;
+					break;
+				case 79:
+					//ice
+					item = 332;
+					break;
+				case 51:
+					//fire
+					continue;
+				case 59:
+					//crops
+					item = 295;
+					break;
+				case 72:
+					//pressure plate
+					item = 70;
+					break;
+				default:
+					item =Block.byId[item] !=null ? Block.byId[item].getDropType(b.mat.getData(), R,-10000) : item;
+					break;
+				}
+			}
+
 
 			if(item <=0) continue;
 

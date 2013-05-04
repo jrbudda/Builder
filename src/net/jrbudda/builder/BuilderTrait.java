@@ -245,7 +245,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		else start = npc.getBukkitEntity().getLocation().clone();
 
 		try {
-			NeededMaterials = Util.MaterialsList(schematic.BuildQueue(start, true, true, excavate, BuildPatternsXZ.linear ,false , 1,0));
+			NeededMaterials = Util.MaterialsList(schematic.BuildQueue(start, true, true, excavate, BuildPatternsXZ.linear ,false , 1,0),plugin.RequireUnobtainable);
 
 		} catch (Exception e) {
 			plugin.getServer().getConsoleSender().sendMessage(e.getMessage());

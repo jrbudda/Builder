@@ -43,6 +43,8 @@ public class Builder extends JavaPlugin {
 	public String SupplyTakenMessage = "";
 	public String CollectingMessage = "";
 
+	public boolean RequireUnobtainable  = false;
+	
 	@Override
 	public void onEnable() {
 
@@ -260,7 +262,7 @@ public class Builder extends JavaPlugin {
 			StringBuilder sb = new StringBuilder();
 
 			for (int j = 1; j < 137; j++) {
-				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.v1_5_R1.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_5_R1.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
+				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.v1_5_R3.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_5_R3.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
 			}
 
 			java.io.File f = new File("mats.txt");
@@ -782,6 +784,7 @@ public class Builder extends JavaPlugin {
 		SupplyNeedMessage = getConfig().getString("DefaultTexts.Supply_Need_Item","");
 		SupplyDontNeedMessage = getConfig().getString("DefaultTexts.Supply_Dont_Need_Item","");
 		SupplyTakenMessage = getConfig().getString("DefaultTexts.Supply_Item_Taken","");
+		RequireUnobtainable = getConfig().getBoolean("RequireUnobtainableBlocks", false);
 		for (String M:getConfig().getStringList("MarkMaterials")){
 			if (getMat(M) > 0) this.MarkMats.add(getMat(M));
 		}

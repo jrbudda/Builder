@@ -3,6 +3,9 @@
 #The directory to look for schematics. 
 SchematicsFolder: plugins/Builder/schematics/
 
+#Whether Supply Mode requires unobtainable blocks or their drops.
+RequireUnobtainableBlocks: false
+
 #The allowed materials for plot marking, the first one in the list is the default. 
 #Use Id or Name. Should only use base blocks, not things that can break on place (like TORCH).
 MarkMaterials: 
