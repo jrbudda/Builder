@@ -73,7 +73,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 				org.bukkit.configuration.MemorySection derp = (org.bukkit.configuration.MemorySection) key.getRaw("NeededMaterials");
 				Set<String> keys = derp.getKeys(false);
 				for (String k : keys){
-					NeededMaterials.put(Integer.valueOf(k),derp.getInt(k));
+					NeededMaterials.put(Integer.valueOf(k),(double) derp.getInt(k));
 				}
 			}
 		} catch (Exception e) {
@@ -223,7 +223,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 	public BuildPatternsXZ BuildPatternXY = BuildPatternsXZ.spiral;
 	public double MoveTimeout = 2.0;
 
-	public Map<Integer, Integer> NeededMaterials = new HashMap<Integer, Integer>();
+	public Map<Integer, Double> NeededMaterials = new HashMap<Integer, Double>();
 
 	public	 Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
 
@@ -245,7 +245,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		else start = npc.getBukkitEntity().getLocation().clone();
 
 		try {
-			NeededMaterials = Util.MaterialsList(schematic.BuildQueue(start, true, true, excavate, BuildPatternsXZ.linear ,false , 1,0),plugin.RequireUnobtainable);
+			NeededMaterials = Util.MaterialsList(schematic.BuildQueue(start, true, true, excavate, BuildPatternsXZ.linear ,false , 1,0));
 
 		} catch (Exception e) {
 			plugin.getServer().getConsoleSender().sendMessage(e.getMessage());
@@ -262,7 +262,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		this.sender = sender;
 
 		if (this.RequireMaterials){
-			java.util.Iterator<Entry<Integer, Integer>> it = NeededMaterials.entrySet().iterator();
+			java.util.Iterator<Entry<Integer, Double>> it = NeededMaterials.entrySet().iterator();
 			long c = 0;
 			while (it.hasNext()){
 				c+= it.next().getValue();

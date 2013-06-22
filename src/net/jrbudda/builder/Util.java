@@ -8,6 +8,7 @@ import java.util.Queue;
 import java.util.Map.Entry;
 import java.util.Random;
 
+import net.jrbudda.builder.Builder.supplymap;
 ////
 import net.minecraft.server.v1_5_R3.Block;
 import net.minecraft.server.v1_5_R3.Item;
@@ -21,15 +22,15 @@ import org.bukkit.ChatColor;
 public class Util {
 
 
-	public static String printList(Map<Integer, Integer> map){
+	public static String printList(Map<Integer, Double> map){
 		StringBuilder sb = new StringBuilder();
 
-		java.util.Iterator<Entry<Integer, Integer>> it = map.entrySet().iterator();
+		java.util.Iterator<Entry<Integer, Double>> it = map.entrySet().iterator();
 
 		while (it.hasNext()){
-			Entry<Integer, Integer> i = it.next();
+			Entry<Integer, Double> i = it.next();
 			if(i.getValue() > 0){
-				sb.append(ChatColor.GREEN + getLocalItemName(i.getKey()) + ":" +ChatColor.WHITE+ i.getValue());
+				sb.append(ChatColor.GREEN + getLocalItemName(i.getKey()) + ":" +ChatColor.WHITE+ i.getValue().intValue());
 				if(it.hasNext())sb.append(", ");
 			}	
 		}
@@ -218,9 +219,9 @@ public class Util {
 
 	static Random R = new java.util.Random();
 
-	public static Map<Integer, Integer> MaterialsList(Queue<BuildBlock> Q, boolean RequireUnobtainable) throws Exception{
+	public static Map<Integer, Double> MaterialsList(Queue<BuildBlock> Q) throws Exception{
 
-		Map<Integer, Integer> out = new HashMap<Integer, Integer>();
+		Map<Integer, Double> out = new HashMap<Integer, Double>();
 
 		do{
 
@@ -228,105 +229,118 @@ public class Util {
 
 			if (b==null) break;
 			int item = b.mat.getItemTypeId();
-			int addamt = 1;
+			double addamt = 1;
 
+			
+			if(Builder.SupplyMapping.containsKey(item)){
+				supplymap i = Builder.SupplyMapping.get(item);
+				item = i.require;
+				addamt = i.amount;				
+			}		
+			else{
+				item =Block.byId[item] !=null ? Block.byId[item].getDropType(b.mat.getData(), R,-10000) : item;
+			}
+			
 
-			if (RequireUnobtainable){
-				switch (item){
-				case 0:
-					//air
-					continue;
-				case 90:
-					//portal
-					continue;
-				}
-			}
-			else {
-				switch (item){
-				case 0:
-					//air
-					continue;
-				case 90:
-					//portal
-					continue;
-				case 97:
-					//silverfish egg
-					continue;
-				case 95:
-					//locked chest
-					item = 54;
-				case 78:
-					// snow
-					continue;
-				case 34:
-					// piston head
-					continue;
-				case 119:
-					// end portal
-					continue;
-				case 80:
-					//snow block
-					break;
-				case 92:
-					//cake
-					item = 354;
-					break;
-				case 43: case 125:
-					//double slabs
-					item +=1;
-					addamt = 2;
-					break;
-				case 20:
-					//glass
-					break;
-				case 102:
-					//glass pane
-					break;
-				case 47:
-					//bookshelf
-					break;
-				case 103:
-					//melon
-					item = 362;
-					break;
-				case 130:
-					//ender chest
-					break;
-				case 134: case 135: case 136:
-					//wood stairs
-					item = 53;
-					break;
-				case 128: case 109: case 108:
-					//stone staitr;
-					item = 67;
-					break;
-				case 79:
-					//ice
-					item = 332;
-					break;
-				case 51:
-					//fire
-					continue;
-				case 59:
-					//crops
-					item = 295;
-					break;
-				case 72:
-					//pressure plate
-					item = 70;
-					break;
-				default:
-					item =Block.byId[item] !=null ? Block.byId[item].getDropType(b.mat.getData(), R,-10000) : item;
-					break;
-				}
-			}
+//			if (RequireUnobtainable){
+//				switch (item){
+//				case 0:
+//					//air
+//					continue;
+//				case 90:
+//					//portal
+//					continue;
+//				case 51:
+//					//fire
+//				continue;
+//				}
+//			}
+//			else {
+//				switch (item){
+//				case 0:
+//					//air
+//					continue;
+//				case 90:
+//					//portal
+//					continue;
+//				case 97:
+//					//silverfish egg
+//					continue;
+//				case 95:
+//					//locked chest
+//					item = 54;
+//				case 78:
+//					// snow
+//					continue;
+//				case 34:
+//					// piston head
+//					continue;
+//				case 119:
+//					// end portal
+//					continue;
+//				case 80:
+//					//snow block
+//					break;
+//				case 92:
+//					//cake
+//					item = 354;
+//					break;
+//				case 43: case 125:
+//					//double slabs
+//					item +=1;
+//					addamt = 2;
+//					break;
+//				case 20:
+//					//glass
+//					break;
+//				case 102:
+//					//glass pane
+//					break;
+//				case 47:
+//					//bookshelf
+//					break;
+//				case 103:
+//					//melon
+//					item = 362;
+//					break;
+//				case 130:
+//					//ender chest
+//					break;
+//				case 134: case 135: case 136:
+//					//wood stairs
+//					item = 53;
+//					break;
+//				case 128: case 109: case 108:
+//					//stone staitr;
+//					item = 67;
+//					break;
+//				case 79:
+//					//ice
+//					item = 332;
+//					break;
+//				case 51:
+//					//fire
+//					continue;
+//				case 59:
+//					//crops
+//					item = 295;
+//					break;
+//				case 72:
+//					//pressure plate
+//					item = 70;
+//					break;
+//				default:
+//					item =Block.byId[item] !=null ? Block.byId[item].getDropType(b.mat.getData(), R,-10000) : item;
+//					break;
+//				}
+//			}
 
 
 			if(item <=0) continue;
 
 			if (out.containsKey(item))
 			{
-				int amt = out.get(item);
+				Double amt = out.get(item);
 				out.put(item,amt+addamt);
 			}
 			else	

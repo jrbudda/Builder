@@ -58,20 +58,10 @@ public class BuilderListener implements Listener {
 				return;
 			}
 
-
 			int item = is.getTypeId();
 
-			//stone stairs
-			if(item == 108 || item == 109 || item == 128) item = 67;
-
-			//wood stairs
-			if(item == 134 || item == 135 || item == 136) item = 53;
-
-			if(item == 72) item = 70;
-
-
 			//do i need it?
-			int needed = inst.NeededMaterials.containsKey(item) ? inst.NeededMaterials.get(item) : 0;
+			int needed = (int) (inst.NeededMaterials.containsKey(item) ? inst.NeededMaterials.get(item) : 0);
 			if(needed > 0){
 
 				//yup, i need it
@@ -90,7 +80,7 @@ public class BuilderListener implements Listener {
 
 					//update needed
 
-					inst.NeededMaterials.put(item,needed  - taking);
+					inst.NeededMaterials.put(item,(double) (needed  - taking));
 					player.sendMessage(plugin.format(plugin.SupplyTakenMessage, inst.getNPC(),inst.schematic, (CommandSender)player,itemname,taking + ""));
 
 					//check if can start

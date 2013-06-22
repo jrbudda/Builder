@@ -2,10 +2,12 @@ package net.jrbudda.builder;
 
 //import java.util.HashMap;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.rmi.activation.ActivationException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.logging.Level;
 
 import net.aufdemrand.denizen.Denizen;
@@ -43,8 +45,15 @@ public class Builder extends JavaPlugin {
 	public String SupplyTakenMessage = "";
 	public String CollectingMessage = "";
 
-	public boolean RequireUnobtainable  = false;
-	
+	public class supplymap{
+		public int original;
+		public int require;
+		public double amount =1;
+	}
+
+	public static java.util.HashMap<Integer, supplymap> SupplyMapping;
+
+
 	@Override
 	public void onEnable() {
 
@@ -112,18 +121,6 @@ public class Builder extends JavaPlugin {
 			else denizen =null;
 		}
 	}
-
-	//		public String runTask(String taskname, NPC npc){
-	//			if(denizen==null) return "Denizen plugin not found!";
-	//			net.aufdemrand.denizen.npc.DenizenNPC dnpc = ((net.aufdemrand.denizen.Denizen)denizen).getDenizenNPCRegistry().getDenizen(npc);
-	//			if (dnpc ==null) return "NPC is not a Denizen!";
-	//			net.aufdemrand.denizen.scripts.ScriptHelper sE = ((net.aufdemrand.denizen.Denizen)denizen).getScriptEngine().helper;
-	//			List<String> theScript = sE.getScript(taskname + ".Script");
-	//			if (theScript.isEmpty()) return "Empty Script!";
-	//			sE.queueScriptEntries(dnpc, sE.buildScriptEntries(dnpc, theScript, taskname), net.aufdemrand.denizen.scripts.ScriptEngine.QueueType.ACTIVITY);
-	//			return null;
-	//		}
-	//	
 
 
 	public String runTask(String taskname, NPC npc){
@@ -257,7 +254,7 @@ public class Builder extends JavaPlugin {
 			return true;
 		}
 		else if (args[0].equalsIgnoreCase("testmats")) {
-		//	java.util.Queue<BuildBlock> q = new java.util.LinkedList<BuildBlock>();
+			//	java.util.Queue<BuildBlock> q = new java.util.LinkedList<BuildBlock>();
 
 			StringBuilder sb = new StringBuilder();
 
@@ -723,7 +720,7 @@ public class Builder extends JavaPlugin {
 			}
 			player.sendMessage(ChatColor.GOLD + "------- Builder Info for " + ThisNPC.getName() + "------");
 
-		//	DecimalFormat df=  new DecimalFormat("#");
+			//	DecimalFormat df=  new DecimalFormat("#");
 
 			if (inst.schematic !=null)			player.sendMessage(ChatColor.GREEN + "Schematic: " + inst.schematic.GetInfo());
 			else player.sendMessage(ChatColor.YELLOW + "No schematic loaded.");
@@ -784,12 +781,13 @@ public class Builder extends JavaPlugin {
 		SupplyNeedMessage = getConfig().getString("DefaultTexts.Supply_Need_Item","");
 		SupplyDontNeedMessage = getConfig().getString("DefaultTexts.Supply_Dont_Need_Item","");
 		SupplyTakenMessage = getConfig().getString("DefaultTexts.Supply_Item_Taken","");
-		RequireUnobtainable = getConfig().getBoolean("RequireUnobtainableBlocks", false);
 		for (String M:getConfig().getStringList("MarkMaterials")){
 			if (getMat(M) > 0) this.MarkMats.add(getMat(M));
 		}
 
 		if (this.MarkMats.isEmpty()) this.MarkMats.add(Material.GLASS.getId());
+
+		loadSupplyMap();
 
 	}
 
@@ -802,5 +800,54 @@ public class Builder extends JavaPlugin {
 		input =	ChatColor.translateAlternateColorCodes('&', input);
 		return input;
 	}
+
+
+	public void loadSupplyMap(){
+
+		saveResource("supply.txt", false);
+
+		File items = new File("plugins" + File.separator + "Builder" + File.separator + "supply.txt");
+
+		Scanner s = null;
+
+		try {
+			s = new java.util.Scanner(items);
+		} catch (FileNotFoundException e) {
+			return;
+		}
+
+		SupplyMapping = new java.util.HashMap<Integer, Builder.supplymap>();
+
+		while (s.hasNext()){
+			String line = s.nextLine();
+			String[] parts = line.split(":");
+			if (parts.length < 2) continue;
+			
+			supplymap out = new supplymap();
+
+			if (tryParseInt(parts[0])){
+				out.original = Integer.parseInt(parts[0]);
+			}
+			else continue;
+
+			if (tryParseInt(parts[1])){
+				out.require = Integer.parseInt(parts[1]);
+			}
+			else continue;
+
+			if (parts.length > 2) {
+				out.amount = Double.parseDouble(parts[2]);
+			}
+
+	//	this.getServer().getLogger().info("Loaded " + out.original + " to " + out.require + "amt " + out.amount);
+			
+			SupplyMapping.put(out.original, out);
+
+		}
+
+
+	}
+
+
 
 }
