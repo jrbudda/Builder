@@ -1,6 +1,6 @@
 name: Builder
 author: jrbudda
-version: 0.7
+version: 0.7.1
 main: net.jrbudda.builder.Builder
 depend:
   - Citizens
