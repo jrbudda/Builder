@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 
-import net.aufdemrand.denizen.Denizen;
+import net.aufdemrand.denizen.objects.dNPC;
 import net.citizensnpcs.Citizens;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
@@ -109,12 +109,12 @@ public class Builder extends JavaPlugin {
 		if (denizen != null) {
 			if (denizen.isEnabled()) {
 				String vers = denizen.getDescription().getVersion();
-				if(vers.contains("0.7")) {
+				if(vers.startsWith("0.7")) {
 					//	net.aufdemrand.sentry.denizen.v7.Util.setupDenizenHook(DieLikePlayers);
 					getLogger().log(Level.WARNING, "Builder is no longer compatible with Denizen .7");
 					denizen =null;
 				}
-				else if(vers.contains("0.8")){
+				else if(vers.startsWith("0.8") || vers.startsWith("0.9")){
 					//ok
 				}
 			}
@@ -124,13 +124,13 @@ public class Builder extends JavaPlugin {
 
 
 	public String runTask(String taskname, NPC npc){
-		return runTaskv8(taskname, npc);
+		return runTaskv9(taskname, npc);
 	}
 
-	private String runTaskv8(String taskname, NPC npc){
+	private String runTaskv9(String taskname, NPC npc){
 		try {
 			if(denizen==null) return "Denizen plugin not found!";	
-			net.aufdemrand.denizen.npc.dNPC dnpc = net.aufdemrand.denizen.utilities.DenizenAPI.getDenizenNPC(npc);
+			dNPC dnpc = net.aufdemrand.denizen.objects.dNPC.mirrorCitizensNPC(npc);
 			net.aufdemrand.denizen.scripts.containers.core.TaskScriptContainer task = net.aufdemrand.denizen.scripts.ScriptRegistry.getScriptContainerAs(taskname, net.aufdemrand.denizen.scripts.containers.core.TaskScriptContainer.class);
 			if (task !=null){
 				task.runTaskScript(null, dnpc, null);
@@ -143,12 +143,11 @@ public class Builder extends JavaPlugin {
 		}
 	}
 
-
 	public void DenizenAction(NPC npc, String action){
 		if(denizen!=null){
 			try {
 				if(npc.hasTrait(net.aufdemrand.denizen.npc.traits.AssignmentTrait.class)){
-					net.aufdemrand.denizen.npc.dNPC dnpc = ((Denizen)denizen).getNPCRegistry().getDenizen(npc);
+					dNPC dnpc = dNPC.mirrorCitizensNPC(npc);
 					dnpc.action(action, null);			
 				}
 			} catch (Exception e) {
@@ -259,7 +258,7 @@ public class Builder extends JavaPlugin {
 			StringBuilder sb = new StringBuilder();
 
 			for (int j = 1; j < 137; j++) {
-				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.v1_5_R3.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_5_R3.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
+				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (net.minecraft.server.v1_6_R1.Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_6_R1.Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
 			}
 
 			java.io.File f = new File("mats.txt");

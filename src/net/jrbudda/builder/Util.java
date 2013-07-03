@@ -10,9 +10,9 @@ import java.util.Random;
 
 import net.jrbudda.builder.Builder.supplymap;
 ////
-import net.minecraft.server.v1_5_R3.Block;
-import net.minecraft.server.v1_5_R3.Item;
-import net.minecraft.server.v1_5_R3.LocaleI18n;
+import net.minecraft.server.v1_6_R1.Block;
+import net.minecraft.server.v1_6_R1.Item;
+import net.minecraft.server.v1_6_R1.LocaleI18n;
 ////
 
 
