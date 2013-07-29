@@ -5,17 +5,19 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.citizensnpcs.api.jnbt.ByteArrayTag;
 import net.citizensnpcs.api.jnbt.CompoundTag;
 import net.citizensnpcs.api.jnbt.IntTag;
+import net.citizensnpcs.api.jnbt.ListTag;
 import net.citizensnpcs.api.jnbt.NBTInputStream;
 import net.citizensnpcs.api.jnbt.ShortTag;
 import net.citizensnpcs.api.jnbt.StringTag;
 import net.citizensnpcs.api.jnbt.Tag;
 
-import org.bukkit.material.MaterialData;
 import org.bukkit.util.Vector;
 
 
@@ -33,7 +35,7 @@ public class MCEditSchematicFormat {
 		NBTInputStream nbtStream = new NBTInputStream(new java.util.zip.GZIPInputStream(stream));
 
 		Vector origin = new Vector();
-	//	Vector offset = new Vector();
+		//	Vector offset = new Vector();
 
 		// Schematic tag
 		CompoundTag schematicTag = (CompoundTag) nbtStream.readTag();
@@ -65,10 +67,10 @@ public class MCEditSchematicFormat {
 		}
 
 		try {
-		//	int offsetX = getChildTag(schematic, "WEOffsetX", IntTag.class).getValue();
-		//	int offsetY = getChildTag(schematic, "WEOffsetY", IntTag.class).getValue();
-		//	int offsetZ = getChildTag(schematic, "WEOffsetZ", IntTag.class).getValue();
-		//	offset = new Vector(offsetX, offsetY, offsetZ);
+			//	int offsetX = getChildTag(schematic, "WEOffsetX", IntTag.class).getValue();
+			//	int offsetY = getChildTag(schematic, "WEOffsetY", IntTag.class).getValue();
+			//	int offsetZ = getChildTag(schematic, "WEOffsetZ", IntTag.class).getValue();
+			//	offset = new Vector(offsetX, offsetY, offsetZ);
 		} catch (Exception e) {
 			// No offset data
 		}
@@ -78,6 +80,11 @@ public class MCEditSchematicFormat {
 		if (!materials.equals("Alpha")) {
 			throw new Exception("Schematic file is not an Alpha schematic");
 		}
+
+
+
+
+
 
 		// Get blocks
 		byte[] rawBlocks = getChildTag(schematic, "Blocks", ByteArrayTag.class).getValue();
@@ -98,42 +105,42 @@ public class MCEditSchematicFormat {
 			}
 		}
 
-		//		// Need to pull out tile entities
-		//		List<Tag> tileEntities = getChildTag(schematic, "TileEntities", ListTag.class).getValue();
-		//		Map<Vector, Map<String, Tag>> tileEntitiesMap =
-		//				new HashMap<Vector, Map<String, Tag>>();
-		//
-		//		for (Tag tag : tileEntities) {
-		//			if (!(tag instanceof CompoundTag)) continue;
-		//			CompoundTag t = (CompoundTag) tag;
-		//
-		//			int x = 0;
-		//			int y = 0;
-		//			int z = 0;
-		//
-		//			Map<String, Tag> values = new HashMap<String, Tag>();
-		//
-		//			for (Map.Entry<String, Tag> entry : t.getValue().entrySet()) {
-		//				if (entry.getKey().equals("x")) {
-		//					if (entry.getValue() instanceof IntTag) {
-		//						x = ((IntTag) entry.getValue()).getValue();
-		//					}
-		//				} else if (entry.getKey().equals("y")) {
-		//					if (entry.getValue() instanceof IntTag) {
-		//						y = ((IntTag) entry.getValue()).getValue();
-		//					}
-		//				} else if (entry.getKey().equals("z")) {
-		//					if (entry.getValue() instanceof IntTag) {
-		//						z = ((IntTag) entry.getValue()).getValue();
-		//					}
-		//				}
-		//
-		//				values.put(entry.getKey(), entry.getValue());
-		//			}
-		//
-		//			Vector vec = new Vector(x, y, z);
-		//			tileEntitiesMap.put(vec, values);
-		//		}
+		// Need to pull out tile entities
+		List<Tag> tileEntities = getChildTag(schematic, "TileEntities", ListTag.class).getValue();
+		Map<Vector, Map<String, Tag>> tileEntitiesMap =
+				new HashMap<Vector, Map<String, Tag>>();
+
+		for (Tag tag : tileEntities) {
+			if (!(tag instanceof CompoundTag)) continue;
+			CompoundTag t = (CompoundTag) tag;
+
+			int x = 0;
+			int y = 0;
+			int z = 0;
+
+			Map<String, Tag> values = new HashMap<String, Tag>();
+
+			for (Map.Entry<String, Tag> entry : t.getValue().entrySet()) {
+				if (entry.getKey().equals("x")) {
+					if (entry.getValue() instanceof IntTag) {
+						x = ((IntTag) entry.getValue()).getValue();
+					}
+				} else if (entry.getKey().equals("y")) {
+					if (entry.getValue() instanceof IntTag) {
+						y = ((IntTag) entry.getValue()).getValue();
+					}
+				} else if (entry.getKey().equals("z")) {
+					if (entry.getValue() instanceof IntTag) {
+						z = ((IntTag) entry.getValue()).getValue();
+					}
+				}
+
+				values.put(entry.getKey(), entry.getValue());
+			}
+
+			Vector vec = new Vector(x, y, z);
+			tileEntitiesMap.put(vec, values);
+		}
 
 		//	Vector size = new Vector(width, height, length);
 
@@ -148,18 +155,27 @@ public class MCEditSchematicFormat {
 					int index = y * width * length + z * width + x;
 					//Vector pt = new Vector(x, y, z);
 
-					BuildBlock M = new BuildBlock();
-					M.mat  = new MaterialData(blocks[index], blockData[index]);
-						M.X = x;
-						M.Y = y;
-						M.Z = z;
+					Vector v = null;
+					for (Vector victor : tileEntitiesMap.keySet()) {
+						if(victor.getBlockX() == x && victor.getBlockY() == y && victor.getBlockZ() == z){					
+							v = victor;
+							break;
+						}
+					}
+
+					EmptyBuildBlock M = null;
+
+					if (v!=null){
+						M = new TileBuildBlock(x,y,z,blocks[index], blockData[index]);
+						((TileBuildBlock)M).tiles = tileEntitiesMap.get(v);
+						tileEntitiesMap.remove(v);		
+					}
+					else if (blocks[index] == 0) M = new EmptyBuildBlock(x,y,z);
+					else {
+						M = new DataBuildBlock(x,y,z,blocks[index], blockData[index]);
+					}
+
 					out.Blocks[x][y][z] = M;
-
-					//					if (block instanceof TileEntityBlock && tileEntitiesMap.containsKey(pt)) {
-					//						((TileEntityBlock) block).setNbtData(new CompoundTag("", tileEntitiesMap.get(pt)));
-					//					}
-
-
 				}
 			}
 		}

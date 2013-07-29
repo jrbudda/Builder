@@ -9,9 +9,12 @@ import java.util.Queue;
 import java.util.Set;
 
 import net.citizensnpcs.api.exception.NPCLoadException;
+import net.citizensnpcs.api.jnbt.CompoundTag;
 import net.citizensnpcs.api.trait.Trait;
 import net.citizensnpcs.api.util.DataKey;
 import net.citizensnpcs.trait.Toggleable;
+import net.minecraft.server.v1_6_R2.NBTTagCompound;
+import net.minecraft.server.v1_6_R2.TileEntity;
 
 
 import org.bukkit.Bukkit;
@@ -19,6 +22,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.v1_6_R2.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
@@ -157,10 +161,10 @@ public class BuilderTrait extends Trait implements Toggleable {
 		key.setDouble("MoveTimeoutSeconds", MoveTimeout);
 		key.setInt("YOffset", Yoffset);
 		key.setInt("YLayers", BuildYLayers);
-		
+
 		if (NeededMaterials.size() > 0)  key.setRaw("NeededMaterials",NeededMaterials);
 		else if (key.keyExists("NeededMaterials")) key.removeKey("NeededMaterials");
-		
+
 		if(oncancel!=null) key.setString("oncancel", oncancel);
 		else if(key.keyExists("oncancel")) key.removeKey("oncancel");
 
@@ -225,7 +229,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	public Map<Integer, Double> NeededMaterials = new HashMap<Integer, Double>();
 
-	public	 Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
+	public	 Queue<EmptyBuildBlock> Q = new LinkedList<EmptyBuildBlock>();
 
 	public enum BuilderState {idle, building, marking, collecting};
 	public enum BuildPatternsXZ {spiral, reversespiral, linear, reverselinear};
@@ -345,7 +349,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		this.State = BuilderState.building;
 
 		NeededMaterials.clear();
-		
+
 		sender.sendMessage(plugin.format(plugin.StartedMessage, npc,schematic, player, null, "0"));
 
 		if (onStart!=null){
@@ -356,7 +360,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		plugin.DenizenAction(npc, "Build Start");
 		plugin.DenizenAction(npc, "Build " + schematic.Name + " Start");
-		
+
 		SetupNextBlock();
 
 		return true;
@@ -366,8 +370,8 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	private Location mypos = null;
 
-	private Queue<BuildBlock> marks = new LinkedList<BuildBlock>();
-	private Queue<BuildBlock> _marks = new LinkedList<BuildBlock>();
+	private Queue<EmptyBuildBlock> marks = new LinkedList<EmptyBuildBlock>();
+	private Queue<EmptyBuildBlock> _marks = new LinkedList<EmptyBuildBlock>();
 
 	public boolean StartMark(int mat){
 		if(!npc.isSpawned()) return false;
@@ -400,7 +404,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 	private CommandSender sender =null; 
 
-	private BuildBlock next = null;
+	private EmptyBuildBlock next = null;
 	private Block pending = null;
 
 	public void SetupNextBlock(){
@@ -447,9 +451,9 @@ public class BuilderTrait extends Trait implements Toggleable {
 				ok= true;
 
 				//dont replace grass with dirt, and vice versa.
-				if (pending.getTypeId() == 3 && next.mat.getItemTypeId() ==2) ok = false;
-				if (pending.getTypeId() == 2 && next.mat.getItemTypeId() ==3) ok = false;
-				if ((pending.getTypeId() == next.mat.getItemTypeId() && pending.getData() == next.mat.getData())) ok =false;
+				if (pending.getTypeId() == 3 && next.getMat().getItemTypeId() ==2) ok = false;
+				if (pending.getTypeId() == 2 && next.getMat().getItemTypeId() ==3) ok = false;
+				if (pending.getTypeId() == next.getMat().getItemTypeId() && pending.getData() == next.getMat().getData()) ok =false;
 				//dont bother putting a block that already exists.
 			} while(!ok);
 
@@ -467,7 +471,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if(npc.isSpawned()){
 
 			if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity || npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems){
-				int m = next.mat.getItemTypeId();
+				int m = next.getMat().getItemTypeId();
 				if (m <=0) m = 278;
 
 				if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getBukkitEntity()).getInventory().setItemInHand(new ItemStack(m));	
@@ -505,7 +509,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if (oncancel!=null) plugin.runTask(oncancel, npc);
 		plugin.DenizenAction(npc, "Build Cancel");
 		if(schematic !=null)  plugin.DenizenAction(npc, "Build " + schematic.Name + " Cancel");
-		
+
 		stop();
 	}
 
@@ -520,7 +524,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 				if (resp ==null) sender.sendMessage("Task " + oncomplete + " completed.");
 				else sender.sendMessage("Task " + oncomplete + " could not be run: " + resp);				
 			}
-			
+
 			plugin.DenizenAction(npc, "Build Complete");
 			plugin.DenizenAction(npc, "Build " + schematic.Name + " Complete");
 		}
@@ -577,49 +581,28 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if(pending != null && next != null) {
 
 			if(State==BuilderState.marking && !clearingMarks) {
-
-				BuildBlock derp = new BuildBlock();
-				derp.mat = new MaterialData(pending.getTypeId(), pending.getData());
-				derp.X = pending.getX();
-				derp.Y = pending.getY();
-				derp.Z = pending.getZ();
-				_marks.add(derp);
+				_marks.add(new DataBuildBlock(pending.getX(), pending.getY(), pending.getZ(), pending.getTypeId(), pending.getData()));
 			}
 
-			boolean b = false;
-
-			//			if(!IgnoreProtection){
-			//				if(owner!=null){
-			//					if (!owner.isOp()) {
-			//						BlockPlaceEvent ev = new BlockPlaceEvent(pending, pending.getState(), pending.getRelative(org.bukkit.block.BlockFace.DOWN), null, owner, b);
-			//						plugin.getServer().getPluginManager().callEvent(ev);
-			//						b = ev.isCancelled();
-			//					}
-			//				}
-			//				//				else{
-			//				//					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-			//				//						public void run() {
-			//				//							if (npc.isSpawned()){
-			//				//								if(npc.getNavigator().isNavigating()){
-			//				//									npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation());
-			//				//									npc.getNavigator().cancelNavigation();
-			//				//								}		
-			//				//							}
-			//				//						}
-			//				//					}, 100);
-			//				//				}
-			//
-			//
-			//			}
-
-			//change block
-			if (!b){
-				pending.setTypeIdAndData(next.mat.getItemTypeId(), next.mat.getData(), false);
-				if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.Player)	{
-					net.citizensnpcs.util.PlayerAnimation.ARM_SWING.play((Player) this.npc.getBukkitEntity(), 64);
-				}
+			pending.setTypeIdAndData(next.getMat().getItemTypeId(), next.getMat().getData(), false);
+		
+			if (next instanceof TileBuildBlock){			
+				//lol what
+				CraftWorld cw =(CraftWorld)pending.getWorld();			
+				CompoundTag nbt = new CompoundTag("", ((TileBuildBlock) next).tiles);
+				NBTTagCompound nmsnbt = (NBTTagCompound) Util.fromNative(nbt);
+				nmsnbt.setInt("x", pending.getX());
+				nmsnbt.setInt("y", pending.getY());
+				nmsnbt.setInt("z", pending.getZ());			
+				TileEntity te = cw.getHandle().getTileEntity(pending.getX(), pending.getY(), pending.getZ());		
+				te.a(nmsnbt);
 			}
-			//arm swing
+
+
+			if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.Player)	{
+				//arm swing
+				net.citizensnpcs.util.PlayerAnimation.ARM_SWING.play((Player) this.npc.getBukkitEntity(), 64);
+			}
 		}
 
 		if (marks.size()==0) clearingMarks = false;

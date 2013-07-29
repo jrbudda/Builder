@@ -6,13 +6,12 @@ import java.util.Queue;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.material.MaterialData;
 import org.bukkit.util.Vector;
 
 
 public class BuilderSchematic {
 	//todo... redo.. multi-dimensional arrays have a lot of overhead apparently.
-	public BuildBlock[][][] Blocks = new BuildBlock[1][1][1]; 
+	public EmptyBuildBlock[][][] Blocks = new EmptyBuildBlock[1][1][1]; 
 
 	public String Name = ""; 
 	public Vector SchematicOrigin = null;
@@ -25,36 +24,20 @@ public class BuilderSchematic {
 		return	SchematicOrigin.clone().toLocation(W).add(dwidth/2,0,dlength/2);
 	}
 
-	public Queue<BuildBlock> CreateMarks(double i, double j, double k, int mat){
+	public Queue<EmptyBuildBlock> CreateMarks(double i, double j, double k, int mat){
 		dwidth = i;
 		dlength = k;
-		Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
+		Queue<EmptyBuildBlock> Q = new LinkedList<EmptyBuildBlock>();
 		Q.clear();
-		BuildBlock a = new BuildBlock();
-		a.X = 0;
-		a.Z = 0;
-		a.mat = new MaterialData(mat);
-		Q.add(a);
-		BuildBlock b = new BuildBlock();
-		b.X = (int) i-1;
-		b.Z = 0;
-		b.mat = new MaterialData(mat);
-		Q.add(b);
-		BuildBlock c = new BuildBlock();
-		c.X = 0;
-		c.Z =(int) k-1;
-		c.mat = new MaterialData(mat);
-		Q.add(c);
-		BuildBlock d = new BuildBlock();
-		d.X =(int) i-1;
-		d.Z =(int) k-1;
-		d.mat = new MaterialData(mat);
-		Q.add(d);
+		Q.add(new DataBuildBlock(0,0,0,mat,(byte) 0));
+		Q.add(new DataBuildBlock((int) (i-1),0,0,mat,(byte) 0));
+		Q.add(new DataBuildBlock(0,0,(int)k-1,mat,(byte) 0));
+		Q.add(new DataBuildBlock((int)i-1,0,(int)k-1,mat,(byte) 0));
 		return Q;
 	}
 
 
-	public Location offset(BuildBlock block, Location origin){
+	public Location offset(EmptyBuildBlock block, Location origin){
 
 		return new Location(origin.getWorld(),block.X - this.dwidth/2 + origin.getBlockX() + 1,block.Y - yoffset +useryoffset + origin.getBlockY()+.5,block.Z - this.dlength/2 + origin.getBlockZ() + 1 );
 	}
@@ -63,19 +46,19 @@ public class BuilderSchematic {
 	int yoffset = 0;
 	int useryoffset = 0;
 
-	public 	 Queue<BuildBlock> BuildQueue(Location origin, boolean ignoreLiquids, boolean ignoreAir, boolean excavate, net.jrbudda.builder.BuilderTrait.BuildPatternsXZ pattern, boolean GroupByLayer, int ylayers, int useryoffset){
+	public 	 Queue<EmptyBuildBlock> BuildQueue(Location origin, boolean ignoreLiquids, boolean ignoreAir, boolean excavate, net.jrbudda.builder.BuilderTrait.BuildPatternsXZ pattern, boolean GroupByLayer, int ylayers, int useryoffset){
 		dwidth = width();
 		dlength = length();
 		yoffset = 0;
 		this.useryoffset = useryoffset;
-		Queue<BuildBlock> Q = new LinkedList<BuildBlock>();
+		Queue<EmptyBuildBlock> Q = new LinkedList<EmptyBuildBlock>();
 
 		//clear out empty planes on the bottom.
 		boolean ok =false;
 		for (int tmpy = 0;tmpy< this.height();tmpy++){
 			for (int tmpx = 0;tmpx< this.width();tmpx++){
 				for (int tmpz = 0;tmpz< this.length();tmpz++){
-					if (this.Blocks[tmpx][tmpy][tmpz].mat.getItemTypeId() > 0) {
+					if (this.Blocks[tmpx][tmpy][tmpz].getMat().getItemTypeId() > 0) {
 						ok = true;
 					}
 				}
@@ -84,20 +67,20 @@ public class BuilderSchematic {
 			else yoffset++;
 		}
 
-		Queue<BuildBlock> exair = new LinkedList<BuildBlock>();
-		Queue<BuildBlock> air = new LinkedList<BuildBlock>();
-		Queue<BuildBlock> base = new LinkedList<BuildBlock>();
-		Queue<BuildBlock> furniture = new LinkedList<BuildBlock>();
-		Queue<BuildBlock> redstone = new LinkedList<BuildBlock>();
-		Queue<BuildBlock> Liq = new LinkedList<BuildBlock>();
-		Queue<BuildBlock> Decor = new LinkedList<BuildBlock>();
-		Queue<BuildBlock> buildQ = new LinkedList<BuildBlock>();
+		Queue<EmptyBuildBlock> exair = new LinkedList<EmptyBuildBlock>();
+		Queue<EmptyBuildBlock> air = new LinkedList<EmptyBuildBlock>();
+		Queue<EmptyBuildBlock> base = new LinkedList<EmptyBuildBlock>();
+		Queue<EmptyBuildBlock> furniture = new LinkedList<EmptyBuildBlock>();
+		Queue<EmptyBuildBlock> redstone = new LinkedList<EmptyBuildBlock>();
+		Queue<EmptyBuildBlock> Liq = new LinkedList<EmptyBuildBlock>();
+		Queue<EmptyBuildBlock> Decor = new LinkedList<EmptyBuildBlock>();
+		Queue<EmptyBuildBlock> buildQ = new LinkedList<EmptyBuildBlock>();
 
 		//	long count = 0;
 
 		for(int y = yoffset;y<height();y+=ylayers){
 
-			List<BuildBlock> thisLayer;
+			List<EmptyBuildBlock> thisLayer;
 			switch (pattern){
 			case linear:
 				thisLayer = Util.LinearPrintLayer(y,ylayers, Blocks, false);
@@ -118,19 +101,20 @@ public class BuilderSchematic {
 
 			//	count+=thisLayer.size();
 
-			for(BuildBlock b:thisLayer){
+			for(EmptyBuildBlock b:thisLayer){
 				//check if it needs to be placed.
 				org.bukkit.block.Block pending = origin.getWorld().getBlockAt(offset(b,origin));
 
-				if (excavate && pending.isEmpty() ==false) exair.add(new BuildBlock(0, (byte) 0, b.X, b.Y, b.Z));
+				if (excavate && pending.isEmpty() ==false) exair.add(new EmptyBuildBlock());
 
 				if(!excavate){	//wont be nuffing there, lol
-					if (pending.getTypeId() == b.mat.getItemTypeId() && pending.getData() == b.mat.getData() ) continue;
-					else if (pending.getTypeId() == 3 && b.mat.getItemTypeId() ==2)  continue;
-					else if (pending.getTypeId() == 2 && b.mat.getItemTypeId() ==3) continue;
+					if (pending.getTypeId() == b.getMat().getItemTypeId() && pending.getData() == b.getMat().getData() ) continue;
+					else if (pending.getTypeId() == 3 && b.getMat().getItemTypeId() ==2)  continue;
+					else if (pending.getTypeId() == 2 && b.getMat().getItemTypeId() ==3) continue;
+
 				}
 
-				org.bukkit.Material m = b.mat.getItemType();
+				org.bukkit.Material m = b.getMat().getItemType();
 
 				if (m==null) continue;
 
@@ -148,7 +132,7 @@ public class BuilderSchematic {
 					break;
 				case TORCH:	case PAINTING:	case SNOW: 	case WATER_LILY: case CACTUS: case SUGAR_CANE_BLOCK: case PUMPKIN: case PUMPKIN_STEM: case PORTAL: case CAKE_BLOCK: case VINE: case NETHER_WARTS: case LEAVES:
 				case SAPLING :case DEAD_BUSH: case WEB: case LONG_GRASS: case RED_ROSE: case YELLOW_FLOWER: case RED_MUSHROOM: case BROWN_MUSHROOM: case FIRE: case CROPS: case MELON_BLOCK: case MELON_STEM: case ENDER_PORTAL:
-				case JACK_O_LANTERN: case CARROT: case POTATO: case SKULL:
+				case JACK_O_LANTERN: case CARROT: case POTATO: case SKULL: case CARPET:
 					//very last
 					Decor.add(b);
 					break;
@@ -222,7 +206,7 @@ public class BuilderSchematic {
 	}
 
 	BuilderSchematic(int w, int h, int l){
-		Blocks = new BuildBlock[w][h][l]; 
+		Blocks = new EmptyBuildBlock[w][h][l]; 
 		dwidth = w;
 		dlength = l;
 	}
