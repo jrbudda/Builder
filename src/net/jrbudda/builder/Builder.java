@@ -21,6 +21,7 @@ import net.minecraft.server.v1_6_R2.Block;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -228,6 +229,8 @@ public class Builder extends JavaPlugin {
 			player.sendMessage(ChatColor.GOLD + "  Sets the build origin to your current location");
 			player.sendMessage(ChatColor.GOLD + "/builder origin current");
 			player.sendMessage(ChatColor.GOLD + "  If the builder is currently building, sets the origin to the starting position of the current project.");
+			player.sendMessage(ChatColor.GOLD + "/builder origin x,y,z");
+			player.sendMessage(ChatColor.GOLD + "  Sets the builder's origin to x,y,z of the current world.");
 			player.sendMessage(ChatColor.GOLD + "/builder mark (item)");
 			player.sendMessage(ChatColor.GOLD + "  marks the 4 corners of the footprint. Optionally specify the material name or id.");
 			player.sendMessage(ChatColor.GOLD + "/builder build (ignoreair) (ignorewater) (excavate) (layers:#) (groupall) (reversespiral) (linear) (reverselinear) (yoffset:#)");
@@ -558,6 +561,19 @@ public class Builder extends JavaPlugin {
 					}
 					else 	player.sendMessage(ChatColor.RED +  ThisNPC.getName() + " is not currently building!");  
 				}
+				else if(args[1].split(",").length == 3){
+					try {
+						int x = Integer.parseInt(args[1].split(",")[0]);
+						int y = Integer.parseInt(args[1].split(",")[1]);
+						int z = Integer.parseInt(args[1].split(",")[2]);
+
+						inst.Origin = new Location(inst.getNPC().getBukkitEntity().getWorld(),x,y,z);
+
+						player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " build origin has been set to " + inst.Origin.toString());   // Talk to the player.
+					} catch (Exception e) {
+						player.sendMessage(ChatColor.RED + "Invalid Coordinates");  
+					}
+				}
 				else player.sendMessage(ChatColor.RED + "Unknown origin command"); 
 			}
 			return true;
@@ -805,9 +821,10 @@ public class Builder extends JavaPlugin {
 
 	public void loadSupplyMap(){
 
-		saveResource("supply.txt", false);
+		if(!(new File(this.getDataFolder() + File.separator + "supply.txt").exists()))
+			saveResource("supply.txt", false);
 
-		File items = new File("plugins" + File.separator + "Builder" + File.separator + "supply.txt");
+		File items = new File(this.getDataFolder() + File.separator + "supply.txt");
 
 		Scanner s = null;
 
@@ -823,7 +840,7 @@ public class Builder extends JavaPlugin {
 			String line = s.nextLine();
 			String[] parts = line.split(":");
 			if (parts.length < 2) continue;
-			
+
 			supplymap out = new supplymap();
 
 			if (tryParseInt(parts[0])){
@@ -840,8 +857,8 @@ public class Builder extends JavaPlugin {
 				out.amount = Double.parseDouble(parts[2]);
 			}
 
-	//	this.getServer().getLogger().info("Loaded " + out.original + " to " + out.require + "amt " + out.amount);
-			
+			//	this.getServer().getLogger().info("Loaded " + out.original + " to " + out.require + "amt " + out.amount);
+
 			SupplyMapping.put(out.original, out);
 
 		}
