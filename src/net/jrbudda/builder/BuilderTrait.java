@@ -62,6 +62,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		}
 
 		IgnoreAir = key.getBoolean("IgnoreAir", false);
+		Silent = key.getBoolean("Silent", false);
 		IgnoreLiquid = key.getBoolean("IgnoreLiquid", false);
 		Excavate = key.getBoolean("Excavate", false);
 		SchematicName =  key.getString("Schematic",null);
@@ -154,6 +155,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		key.setBoolean("IgnoreAir",IgnoreAir);
 		key.setBoolean("IgnoreLiquid",IgnoreLiquid);
 		key.setBoolean("Excavate",Excavate);
+		key.setBoolean("Silent",Silent);
 		key.setString("State", State.toString());
 		key.setString("PatternXY",BuildPatternXY.toString());
 		key.setBoolean("HoldItems", HoldItems);
@@ -226,6 +228,8 @@ public class BuilderTrait extends Trait implements Toggleable {
 	public Integer Yoffset = 0;
 	public BuildPatternsXZ BuildPatternXY = BuildPatternsXZ.spiral;
 	public double MoveTimeout = 2.0;
+	public Boolean Silent = false;
+
 
 	public Map<Integer, Double> NeededMaterials = new HashMap<Integer, Double>();
 
@@ -273,7 +277,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 			}	
 
 			if (c>0){
-				sender.sendMessage(plugin.format(plugin.CollectingMessage, npc, schematic, sender, SchematicName, c+""));
+				if (!Silent) sender.sendMessage(plugin.format(plugin.CollectingMessage, npc, schematic, sender, SchematicName, c+""));
 				this.State =BuilderState.collecting;
 				return true;
 			}
@@ -350,12 +354,15 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		NeededMaterials.clear();
 
-		sender.sendMessage(plugin.format(plugin.StartedMessage, npc,schematic, player, null, "0"));
+		if(!Silent)sender.sendMessage(plugin.format(plugin.StartedMessage, npc,schematic, player, null, "0"));
 
 		if (onStart!=null){
 			String resp = plugin.runTask(onStart, npc);
+			if(!Silent){
 			if (resp ==null) sender.sendMessage("Task " + onStart + " completed.");
-			else sender.sendMessage("Task " + onStart + " could not be run: " + resp);				
+			else sender.sendMessage("Task " + onStart + " could not be run: " + resp);		
+			}
+			
 		}
 
 		plugin.DenizenAction(npc, "Build Start");
@@ -455,6 +462,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 				if (pending.getTypeId() == 2 && next.getMat().getItemTypeId() ==3) ok = false;
 				if (pending.getTypeId() == next.getMat().getItemTypeId() && pending.getData() == next.getMat().getData()) ok =false;
 				//dont bother putting a block that already exists.
+
 			} while(!ok);
 
 
@@ -517,12 +525,14 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if (sender == null) sender = plugin.getServer().getConsoleSender();
 
 		if (this.State == BuilderState.building){
-			sender.sendMessage(plugin.format(plugin.CompleteMessage, npc,schematic, sender,null,"0"));
+			if(!Silent)sender.sendMessage(plugin.format(plugin.CompleteMessage, npc,schematic, sender,null,"0"));
 
 			if (oncomplete!=null){
 				String resp = plugin.runTask(oncomplete, npc);
+				if(!Silent){
 				if (resp ==null) sender.sendMessage("Task " + oncomplete + " completed.");
-				else sender.sendMessage("Task " + oncomplete + " could not be run: " + resp);				
+				else sender.sendMessage("Task " + oncomplete + " could not be run: " + resp);	
+				}
 			}
 
 			plugin.DenizenAction(npc, "Build Complete");
@@ -585,7 +595,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 			}
 
 			pending.setTypeIdAndData(next.getMat().getItemTypeId(), next.getMat().getData(), false);
-		
+
 			if (next instanceof TileBuildBlock){			
 				//lol what
 				CraftWorld cw =(CraftWorld)pending.getWorld();			

@@ -258,8 +258,6 @@ public class Builder extends JavaPlugin {
 			return true;
 		}
 		else if (args[0].equalsIgnoreCase("testmats")) {
-			//	java.util.Queue<BuildBlock> q = new java.util.LinkedList<BuildBlock>();
-
 			StringBuilder sb = new StringBuilder();
 
 			for (int j = 1; j < 137; j++) {
@@ -342,14 +340,12 @@ public class Builder extends JavaPlugin {
 			}			
 		}
 
-
 		ThisNPC = CitizensAPI.getNPCRegistry().getById(npcid); 
 
 		if (ThisNPC == null) {
 			player.sendMessage(ChatColor.RED + "NPC with id " + npcid + " not found");
 			return true;
 		}
-
 
 		if (!ThisNPC.hasTrait(BuilderTrait.class)) {
 			player.sendMessage(ChatColor.RED + "That command must be performed on a Builder!");
@@ -358,12 +354,9 @@ public class Builder extends JavaPlugin {
 
 
 		if (sender instanceof Player && !CitizensAPI.getNPCRegistry().isNPC((Entity) sender)){
-
 			if (ThisNPC.getTrait(Owner.class).getOwner().equalsIgnoreCase(player.getName())) {
 				//OK!
-
 			}
-
 			else {
 				//not player is owner
 				if (((Player)sender).hasPermission("citizens.admin") == false){
@@ -379,10 +372,7 @@ public class Builder extends JavaPlugin {
 						return true;
 					}
 				}
-
-
 			}
-
 		}
 
 		BuilderTrait inst = getBuilder(ThisNPC);
@@ -394,7 +384,6 @@ public class Builder extends JavaPlugin {
 				return true;
 			}
 
-
 			inst.oncancel = null;
 			inst.oncomplete = null;
 			inst.onStart = null;
@@ -404,19 +393,29 @@ public class Builder extends JavaPlugin {
 			inst.Excavate = false;
 			inst.GroupByLayer = true;
 			inst.BuildYLayers = 1;
+			inst.Silent = false;
 			inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.spiral;			
+		
+			for (int a = 0; a< args.length; a++){
+				if (args[a].equalsIgnoreCase("silent")){
+					if (args[a].equalsIgnoreCase("silent")){
+						inst.Silent = true;
+					}
+				}
+			}
+
 			for (int a = 0; a< args.length; a++){
 				if (args[a].toLowerCase().contains("oncomplete:")){
 					inst.oncomplete = args[a].split(":")[1];
-					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.oncomplete + " on build completion");
+					if(!inst.Silent) player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.oncomplete + " on build completion");
 				}
 				else if (args[a].toLowerCase().contains("oncancel:")){
 					inst.oncancel = args[a].split(":")[1];
-					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.oncancel + " on build cancelation");
+					if(!inst.Silent)player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.oncancel + " on build cancelation");
 				}
 				else if (args[a].toLowerCase().contains("onstart:")){
 					inst.onStart = args[a].split(":")[1];
-					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.onStart + " on when building starts");
+					if(!inst.Silent)player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will run task " + inst.onStart + " on when building starts");
 				}
 				else if (args[a].toLowerCase().contains("layers:")){
 					String test = args[a].split(":")[1];
@@ -445,7 +444,7 @@ public class Builder extends JavaPlugin {
 				}
 				else if (args[a].equalsIgnoreCase("excavate")){
 					inst.Excavate = true;
-					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will excavate first");
+					if(!inst.Silent)player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " will excavate first");
 				}
 				else if (args[a].equalsIgnoreCase("spiral")){
 					inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.spiral;
@@ -459,18 +458,14 @@ public class Builder extends JavaPlugin {
 				else if (args[a].equalsIgnoreCase("reverselinear")){
 					inst.BuildPatternXY = net.jrbudda.builder.BuilderTrait.BuildPatternsXZ.reverselinear;
 				}
-
 			}
 
 			if(inst.RequireMaterials){
 				inst.GetMatsList(inst.Excavate);
 			}
 
-			if (inst.TryBuild(player)){
-
-			}
-			else {
-				player.sendMessage(ChatColor.RED + ThisNPC.getName() + " could not build. Already building or no schematic loaded?.");   // Talk to the player.
+			if (!inst.TryBuild(player)){
+				if(!inst.Silent)player.sendMessage(ChatColor.RED + ThisNPC.getName() + " could not build. Already building or no schematic loaded?.");   // Talk to the player.
 			}
 			return true;
 

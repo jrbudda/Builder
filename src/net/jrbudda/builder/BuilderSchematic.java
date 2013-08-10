@@ -105,7 +105,7 @@ public class BuilderSchematic {
 				//check if it needs to be placed.
 				org.bukkit.block.Block pending = origin.getWorld().getBlockAt(offset(b,origin));
 
-				if (excavate && pending.isEmpty() ==false) exair.add(new EmptyBuildBlock());
+				if (excavate && pending.isEmpty()==false) exair.add(new EmptyBuildBlock(b.X, b.Y, b.Z));
 
 				if(!excavate){	//wont be nuffing there, lol
 					if (pending.getTypeId() == b.getMat().getItemTypeId() && pending.getData() == b.getMat().getData() ) continue;
