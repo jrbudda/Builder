@@ -28,7 +28,7 @@ class DataBuildBlock extends EmptyBuildBlock{
 		this.X = x;
 		this.Y = y;
 		this.Z = z;
-		this.mat = new MaterialData(id, data);
+		this.mat = new MaterialData(id,data);
 	}
 	
 	@Override

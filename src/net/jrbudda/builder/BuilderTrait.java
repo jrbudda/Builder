@@ -13,8 +13,8 @@ import net.citizensnpcs.api.jnbt.CompoundTag;
 import net.citizensnpcs.api.trait.Trait;
 import net.citizensnpcs.api.util.DataKey;
 import net.citizensnpcs.trait.Toggleable;
-import net.minecraft.server.v1_6_R2.NBTTagCompound;
-import net.minecraft.server.v1_6_R2.TileEntity;
+import net.minecraft.server.v1_6_R3.NBTTagCompound;
+import net.minecraft.server.v1_6_R3.TileEntity;
 
 
 import org.bukkit.Bukkit;
@@ -22,7 +22,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_6_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_6_R3.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
@@ -573,7 +573,6 @@ public class BuilderTrait extends Trait implements Toggleable {
 				dyn.triggerRenderOfVolume(npc.getBukkitEntity().getWorld().getName(), this.ContinueLoc.getBlockX() - schematic.width()/2, this.ContinueLoc.getBlockY(),  this.ContinueLoc.getBlockZ() - schematic.length()/2,  this.ContinueLoc.getBlockX() + schematic.width()/2,  this.ContinueLoc.getBlockY() + schematic.height()/2,  this.ContinueLoc.getBlockZ() + schematic.length()/2);
 			}
 		}
-
 
 		sender = null;
 		oncomplete = null;
