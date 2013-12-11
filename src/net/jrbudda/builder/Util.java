@@ -23,22 +23,22 @@ import net.citizensnpcs.api.jnbt.StringTag;
 import net.citizensnpcs.api.jnbt.Tag;
 import net.jrbudda.builder.Builder.supplymap;
 ////
-import net.minecraft.server.v1_6_R3.Block;
-import net.minecraft.server.v1_6_R3.Item;
-import net.minecraft.server.v1_6_R3.LocaleI18n;
-import net.minecraft.server.v1_6_R3.NBTBase;
-import net.minecraft.server.v1_6_R3.NBTTagByte;
-import net.minecraft.server.v1_6_R3.NBTTagByteArray;
-import net.minecraft.server.v1_6_R3.NBTTagCompound;
-import net.minecraft.server.v1_6_R3.NBTTagDouble;
-import net.minecraft.server.v1_6_R3.NBTTagEnd;
-import net.minecraft.server.v1_6_R3.NBTTagFloat;
-import net.minecraft.server.v1_6_R3.NBTTagInt;
-import net.minecraft.server.v1_6_R3.NBTTagIntArray;
-import net.minecraft.server.v1_6_R3.NBTTagList;
-import net.minecraft.server.v1_6_R3.NBTTagLong;
-import net.minecraft.server.v1_6_R3.NBTTagShort;
-import net.minecraft.server.v1_6_R3.NBTTagString;
+import net.minecraft.server.v1_7_R1.Block;
+import net.minecraft.server.v1_7_R1.Item;
+import net.minecraft.server.v1_7_R1.LocaleI18n;
+import net.minecraft.server.v1_7_R1.NBTBase;
+import net.minecraft.server.v1_7_R1.NBTTagByte;
+import net.minecraft.server.v1_7_R1.NBTTagByteArray;
+import net.minecraft.server.v1_7_R1.NBTTagCompound;
+import net.minecraft.server.v1_7_R1.NBTTagDouble;
+import net.minecraft.server.v1_7_R1.NBTTagEnd;
+import net.minecraft.server.v1_7_R1.NBTTagFloat;
+import net.minecraft.server.v1_7_R1.NBTTagInt;
+import net.minecraft.server.v1_7_R1.NBTTagIntArray;
+import net.minecraft.server.v1_7_R1.NBTTagList;
+import net.minecraft.server.v1_7_R1.NBTTagLong;
+import net.minecraft.server.v1_7_R1.NBTTagShort;
+import net.minecraft.server.v1_7_R1.NBTTagString;
 ////
 
 
@@ -70,7 +70,11 @@ public class Util {
 		try {
 			if (MatId==0) return  "Air";
 			if(MatId < 256){
-				Block b =Block.byId[MatId];
+				Block b =Block.e(MatId);
+				if ( MatId == 3)  return LocaleI18n.get("tile.dirt.default.name");
+				if ( MatId == 12)  return LocaleI18n.get("tile.sand.default.name");
+				if ( MatId == 37)  return LocaleI18n.get("tile.flower1.dandelion.name");
+				if ( MatId == 38)  return LocaleI18n.get("tile.flower2.poppy.name");
 				if ( MatId == 6)  return LocaleI18n.get("tile.sapling.oak.name");
 				if ( MatId == 21)  return LocaleI18n.get("item.dyePowder.blue.name");
 				if ( MatId == 44)  return LocaleI18n.get("tile.stoneSlab.stone.name");
@@ -79,7 +83,7 @@ public class Util {
 				return	b.getName();
 			}
 			else{
-				Item b =Item.byId[MatId];
+				Item b =Item.d(MatId);
 				return LocaleI18n.get(b.getName() + ".name");
 			}
 		} catch (Exception e) {
@@ -266,7 +270,7 @@ public class Util {
 				addamt = i.amount;				
 			}		
 			else{
-				item =Block.byId[item] !=null ? Block.byId[item].getDropType(b.getMat().getData(), R,-10000) : item;
+				item =(Integer) (Block.e(item) !=null ? Item.b(Block.e(item).getDropType(b.getMat().getData(), R,-10000)) : item);
 			}
 			
 //			if (RequireUnobtainable){
@@ -383,8 +387,8 @@ public class Util {
 
 	static boolean canStand(org.bukkit.block.Block base){
 		org.bukkit.block.Block below = base.getRelative(0, -1, 0);
-		if(!below.isEmpty() && Block.byId[below.getTypeId()].material.isSolid()){
-			if(base.isEmpty() || Block.byId[base.getTypeId()].material.isSolid()==false){
+		if(!below.isEmpty() && Block.e(below.getTypeId()).getMaterial().isSolid()){
+			if(base.isEmpty() || Block.e(base.getTypeId()).getMaterial().isSolid()==false){
 				return true;
 			}
 		}
@@ -397,48 +401,40 @@ public class Util {
             return null;
         }
         if (foreign instanceof CompoundTag) {
-            NBTTagCompound tag = new NBTTagCompound(foreign.getName());
+            NBTTagCompound tag = new NBTTagCompound();
             for (Map.Entry<String, Tag> entry : ((CompoundTag) foreign)
                     .getValue().entrySet()) {
                 tag.set(entry.getKey(), fromNative(entry.getValue()));
             }
             return tag;
         } else if (foreign instanceof ByteTag) {
-            return new NBTTagByte(foreign.getName(),
-                    ((ByteTag) foreign).getValue());
+            return new NBTTagByte(((ByteTag) foreign).getValue());
         } else if (foreign instanceof ByteArrayTag) {
-            return new NBTTagByteArray(foreign.getName(),
-                    ((ByteArrayTag) foreign).getValue());
+            return new NBTTagByteArray(((ByteArrayTag) foreign).getValue());
         } else if (foreign instanceof DoubleTag) {
-            return new NBTTagDouble(foreign.getName(),
-                    ((DoubleTag) foreign).getValue());
+            return new NBTTagDouble(((DoubleTag) foreign).getValue());
         } else if (foreign instanceof FloatTag) {
-            return new NBTTagFloat(foreign.getName(),
-                    ((FloatTag) foreign).getValue());
+            return new NBTTagFloat(((FloatTag) foreign).getValue());
         } else if (foreign instanceof IntTag) {
-            return new NBTTagInt(foreign.getName(),
-                    ((IntTag) foreign).getValue());
+            return new NBTTagInt(((IntTag) foreign).getValue());
         } else if (foreign instanceof IntArrayTag) {
-            return new NBTTagIntArray(foreign.getName(),
-                    ((IntArrayTag) foreign).getValue());
+            return new NBTTagIntArray(((IntArrayTag) foreign).getValue());
         } else if (foreign instanceof ListTag) {
-            NBTTagList tag = new NBTTagList(foreign.getName());
+            NBTTagList tag = new NBTTagList();
             ListTag foreignList = (ListTag) foreign;
             for (Tag t : foreignList.getValue()) {
                 tag.add(fromNative(t));
             }
             return tag;
         } else if (foreign instanceof LongTag) {
-            return new NBTTagLong(foreign.getName(),
-                    ((LongTag) foreign).getValue());
+            return new NBTTagLong(((LongTag) foreign).getValue());
         } else if (foreign instanceof ShortTag) {
-            return new NBTTagShort(foreign.getName(),
-                    ((ShortTag) foreign).getValue());
+            return new NBTTagShort(((ShortTag) foreign).getValue());
         } else if (foreign instanceof StringTag) {
-            return new NBTTagString(foreign.getName(),
-                    ((StringTag) foreign).getValue());
+            return new NBTTagString(foreign.getName());
         } else if (foreign instanceof EndTag) {
-            return new NBTTagEnd();
+            throw new IllegalArgumentException("Cant make EndTag: "
+                    + foreign.getName());
         } else {
             throw new IllegalArgumentException("Don't know how to make NMS "
                     + foreign.getClass().getCanonicalName());

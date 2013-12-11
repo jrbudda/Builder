@@ -19,7 +19,7 @@ public class BuilderSchematic {
 	public Location getSchematicOrigin(BuilderTrait Builder){	
 		if (SchematicOrigin == null)return null;
 
-		World W = Builder.getNPC().getBukkitEntity().getWorld();
+		World W = Builder.getNPC().getEntity().getWorld();
 
 		return	SchematicOrigin.clone().toLocation(W).add(dwidth/2,0,dlength/2);
 	}

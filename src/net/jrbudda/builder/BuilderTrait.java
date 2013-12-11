@@ -13,8 +13,8 @@ import net.citizensnpcs.api.jnbt.CompoundTag;
 import net.citizensnpcs.api.trait.Trait;
 import net.citizensnpcs.api.util.DataKey;
 import net.citizensnpcs.trait.Toggleable;
-import net.minecraft.server.v1_6_R3.NBTTagCompound;
-import net.minecraft.server.v1_6_R3.TileEntity;
+import net.minecraft.server.v1_7_R1.NBTTagCompound;
+import net.minecraft.server.v1_7_R1.TileEntity;
 
 
 import org.bukkit.Bukkit;
@@ -22,7 +22,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_6_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_7_R1.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
@@ -250,7 +250,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		if (Origin !=null) start = Origin.clone(); 
 		else if (ContinueLoc!=null) start = ContinueLoc.clone();
-		else start = npc.getBukkitEntity().getLocation().clone();
+		else start = npc.getEntity().getLocation().clone();
 
 		try {
 			NeededMaterials = Util.MaterialsList(schematic.BuildQueue(start, true, true, excavate, BuildPatternsXZ.linear ,false , 1,0));
@@ -297,7 +297,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 	//		Location start = null;
 	//		if (Origin !=null) start = Origin.clone(); 
 	//		else if (ContinueLoc!=null) start = ContinueLoc.clone();
-	//		else start = npc.getBukkitEntity().getLocation().clone();
+	//		else start = npc.getEntity().getLocation().clone();
 	//
 	//		Map<Integer, Integer> derp = Util.MaterialsList(schematic.BuildQueue(start, true, true, false, BuildPatternsXZ.linear ,false , 1, 0));
 	//
@@ -341,14 +341,14 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		if (Origin !=null) start = Origin.clone(); 
 		else if (ContinueLoc!=null) start = ContinueLoc.clone();
-		else start = npc.getBukkitEntity().getLocation().clone();
+		else start = npc.getEntity().getLocation().clone();
 
 		Q = schematic.BuildQueue(start, IgnoreLiquid, IgnoreAir,Excavate, this.BuildPatternXY,this.GroupByLayer, this.BuildYLayers, this.Yoffset);
 
 		startingcount = Q.size();
 		ContinueLoc = start.clone();
 
-		mypos = npc.getBukkitEntity().getLocation().clone();
+		mypos = npc.getEntity().getLocation().clone();
 
 		this.State = BuilderState.building;
 
@@ -390,13 +390,13 @@ public class BuilderTrait extends Trait implements Toggleable {
 		onStart = null;
 		_schematic = schematic;
 
-		mypos = npc.getBukkitEntity().getLocation().clone();
+		mypos = npc.getEntity().getLocation().clone();
 
 		schematic = new BuilderSchematic();
 		schematic.Name = _schematic.Name;
 
 		if (Origin==null){
-			ContinueLoc = this.npc.getBukkitEntity().getLocation().clone();
+			ContinueLoc = this.npc.getEntity().getLocation().clone();
 		}
 		else{
 			ContinueLoc = Origin.clone();
@@ -478,12 +478,12 @@ public class BuilderTrait extends Trait implements Toggleable {
 
 		if(npc.isSpawned()){
 
-			if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity || npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems){
+			if((npc.getEntity() instanceof org.bukkit.entity.HumanEntity || npc.getEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems){
 				int m = next.getMat().getItemTypeId();
 				if (m <=0) m = 278;
 
-				if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getBukkitEntity()).getInventory().setItemInHand(new ItemStack(m));	
-				else if((npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems)	((org.bukkit.entity.Enderman) npc.getBukkitEntity()).setCarriedMaterial(new MaterialData(m));
+				if((npc.getEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getEntity()).getInventory().setItemInHand(new ItemStack(m));	
+				else if((npc.getEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems)	((org.bukkit.entity.Enderman) npc.getEntity()).setCarriedMaterial(new MaterialData(m));
 			}
 		}
 
@@ -502,7 +502,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 			public void run() {
 				if (npc.isSpawned()){
 					if(npc.getNavigator().isNavigating()){
-						npc.getBukkitEntity().teleport(npc.getNavigator().getTargetAsLocation());
+						npc.getEntity().teleport(npc.getNavigator().getTargetAsLocation());
 						npc.getNavigator().cancelNavigation();
 					}		
 				}
@@ -549,7 +549,7 @@ public class BuilderTrait extends Trait implements Toggleable {
 		if (this.State ==BuilderState.marking){
 			this.State =BuilderState.idle;
 			if(Origin !=null) npc.getNavigator().setTarget(Origin);
-			else npc.getBukkitEntity().teleport(mypos);
+			else npc.getEntity().teleport(mypos);
 			marks.addAll(_marks);
 			_marks.clear();
 			if (_schematic !=null) schematic = _schematic;
@@ -564,13 +564,13 @@ public class BuilderTrait extends Trait implements Toggleable {
 		}
 
 
-		if((npc.getBukkitEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getBukkitEntity()).getInventory().setItemInHand(new ItemStack(0));	
-		else if((npc.getBukkitEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems)	((org.bukkit.entity.Enderman) npc.getBukkitEntity()).setCarriedMaterial(new MaterialData(0));
+		if((npc.getEntity() instanceof org.bukkit.entity.HumanEntity) && this.HoldItems)((org.bukkit.entity.HumanEntity) npc.getEntity()).getInventory().setItemInHand(new ItemStack(0));	
+		else if((npc.getEntity() instanceof org.bukkit.entity.Enderman) && this.HoldItems)	((org.bukkit.entity.Enderman) npc.getEntity()).setCarriedMaterial(new MaterialData(0));
 
 		if (stop && plugin.getServer().getPluginManager().getPlugin("dynmap") != null){
 			if (plugin.getServer().getPluginManager().getPlugin("dynmap").isEnabled()) {
 				org.dynmap.DynmapCommonAPI dyn  = (DynmapCommonAPI) (plugin.getServer().getPluginManager().getPlugin("dynmap"));
-				dyn.triggerRenderOfVolume(npc.getBukkitEntity().getWorld().getName(), this.ContinueLoc.getBlockX() - schematic.width()/2, this.ContinueLoc.getBlockY(),  this.ContinueLoc.getBlockZ() - schematic.length()/2,  this.ContinueLoc.getBlockX() + schematic.width()/2,  this.ContinueLoc.getBlockY() + schematic.height()/2,  this.ContinueLoc.getBlockZ() + schematic.length()/2);
+				dyn.triggerRenderOfVolume(npc.getEntity().getWorld().getName(), this.ContinueLoc.getBlockX() - schematic.width()/2, this.ContinueLoc.getBlockY(),  this.ContinueLoc.getBlockZ() - schematic.length()/2,  this.ContinueLoc.getBlockX() + schematic.width()/2,  this.ContinueLoc.getBlockY() + schematic.height()/2,  this.ContinueLoc.getBlockZ() + schematic.length()/2);
 			}
 		}
 
@@ -608,9 +608,9 @@ public class BuilderTrait extends Trait implements Toggleable {
 			}
 
 
-			if(this.npc.getBukkitEntity() instanceof org.bukkit.entity.Player)	{
+			if(this.npc.getEntity() instanceof org.bukkit.entity.Player)	{
 				//arm swing
-				net.citizensnpcs.util.PlayerAnimation.ARM_SWING.play((Player) this.npc.getBukkitEntity(), 64);
+				net.citizensnpcs.util.PlayerAnimation.ARM_SWING.play((Player) this.npc.getEntity(), 64);
 			}
 		}
 

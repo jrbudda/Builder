@@ -17,7 +17,7 @@ import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.TraitInfo;
 import net.citizensnpcs.api.trait.trait.Owner;
 
-import net.minecraft.server.v1_6_R3.Block;
+import net.minecraft.server.v1_7_R1.Block;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -261,7 +261,7 @@ public class Builder extends JavaPlugin {
 			StringBuilder sb = new StringBuilder();
 
 			for (int j = 1; j < 137; j++) {
-				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (Block.byId[j].getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(Block.byId[j].getDropType(j, Util.R,-10000))+ "\n" );
+				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (Block.e(j).getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_7_R1.Item.b(Block.e(j).getDropType(j, Util.R,-10000)))+ "\n" );
 			}
 
 			java.io.File f = new File("mats.txt");
@@ -520,7 +520,7 @@ public class Builder extends JavaPlugin {
 			if (args.length <= 1) {
 
 				if(inst.getNPC().isSpawned()){
-					inst.Origin = inst.getNPC().getBukkitEntity().getLocation();
+					inst.Origin = inst.getNPC().getEntity().getLocation();
 					player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " build origin has been set to its current location.");   // Talk to the player.
 				}
 				else		player.sendMessage(ChatColor.RED + ThisNPC.getName() + " not spawned."); 
@@ -562,7 +562,7 @@ public class Builder extends JavaPlugin {
 						int y = Integer.parseInt(args[1].split(",")[1]);
 						int z = Integer.parseInt(args[1].split(",")[2]);
 
-						inst.Origin = new Location(inst.getNPC().getBukkitEntity().getWorld(),x,y,z);
+						inst.Origin = new Location(inst.getNPC().getEntity().getWorld(),x,y,z);
 
 						player.sendMessage(ChatColor.GREEN + ThisNPC.getName() + " build origin has been set to " + inst.Origin.toString());   // Talk to the player.
 					} catch (Exception e) {
