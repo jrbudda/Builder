@@ -23,22 +23,22 @@ import net.citizensnpcs.api.jnbt.StringTag;
 import net.citizensnpcs.api.jnbt.Tag;
 import net.jrbudda.builder.Builder.supplymap;
 ////
-import net.minecraft.server.v1_7_R1.Block;
-import net.minecraft.server.v1_7_R1.Item;
-import net.minecraft.server.v1_7_R1.LocaleI18n;
-import net.minecraft.server.v1_7_R1.NBTBase;
-import net.minecraft.server.v1_7_R1.NBTTagByte;
-import net.minecraft.server.v1_7_R1.NBTTagByteArray;
-import net.minecraft.server.v1_7_R1.NBTTagCompound;
-import net.minecraft.server.v1_7_R1.NBTTagDouble;
-import net.minecraft.server.v1_7_R1.NBTTagEnd;
-import net.minecraft.server.v1_7_R1.NBTTagFloat;
-import net.minecraft.server.v1_7_R1.NBTTagInt;
-import net.minecraft.server.v1_7_R1.NBTTagIntArray;
-import net.minecraft.server.v1_7_R1.NBTTagList;
-import net.minecraft.server.v1_7_R1.NBTTagLong;
-import net.minecraft.server.v1_7_R1.NBTTagShort;
-import net.minecraft.server.v1_7_R1.NBTTagString;
+import net.minecraft.server.v1_7_R3.Block;
+import net.minecraft.server.v1_7_R3.Item;
+import net.minecraft.server.v1_7_R3.LocaleI18n;
+import net.minecraft.server.v1_7_R3.NBTBase;
+import net.minecraft.server.v1_7_R3.NBTTagByte;
+import net.minecraft.server.v1_7_R3.NBTTagByteArray;
+import net.minecraft.server.v1_7_R3.NBTTagCompound;
+import net.minecraft.server.v1_7_R3.NBTTagDouble;
+import net.minecraft.server.v1_7_R3.NBTTagEnd;
+import net.minecraft.server.v1_7_R3.NBTTagFloat;
+import net.minecraft.server.v1_7_R3.NBTTagInt;
+import net.minecraft.server.v1_7_R3.NBTTagIntArray;
+import net.minecraft.server.v1_7_R3.NBTTagList;
+import net.minecraft.server.v1_7_R3.NBTTagLong;
+import net.minecraft.server.v1_7_R3.NBTTagShort;
+import net.minecraft.server.v1_7_R3.NBTTagString;
 ////
 
 
