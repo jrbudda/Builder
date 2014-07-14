@@ -17,7 +17,8 @@ import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.TraitInfo;
 import net.citizensnpcs.api.trait.trait.Owner;
 
-import net.minecraft.server.v1_7_R3.Block;
+import net.minecraft.server.v1_7_R4.Block;
+import net.minecraft.server.v1_7_R4.Item;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -261,7 +262,7 @@ public class Builder extends JavaPlugin {
 			StringBuilder sb = new StringBuilder();
 
 			for (int j = 1; j < 137; j++) {
-				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (Block.e(j).getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(net.minecraft.server.v1_7_R3.Item.b(Block.e(j).getDropType(j, Util.R,-10000)))+ "\n" );
+				sb.append( j+":"+ Util.getLocalItemName(j) +" > " +  (Block.getById(j).getDropType(j, Util.R,-10000)) +":" + Util.getLocalItemName(Item.getId(Block.getById(j).getDropType(j, Util.R, -10000)))+ "\n" );
 			}
 
 			java.io.File f = new File("mats.txt");
@@ -740,8 +741,8 @@ public class Builder extends JavaPlugin {
 			if(inst.Origin ==null)player.sendMessage(ChatColor.GREEN + "Origin: " +ChatColor.WHITE +"My Location");
 			else player.sendMessage(ChatColor.GREEN + "Origin: " +ChatColor.WHITE + " x:" + inst.Origin.getBlockX()+ " y:" + inst.Origin.getBlockY()+ " z:" + inst.Origin.getBlockZ());
 
-			player.sendMessage(ChatColor.GREEN + "Status: " + ChatColor.WHITE + inst.State + " §aTimeout:§f " + inst.MoveTimeout);
-			player.sendMessage(ChatColor.GREEN + "Require Mats: " + ChatColor.WHITE + inst.RequireMaterials + " §aHold Items:§f " + inst.HoldItems);
+			player.sendMessage(ChatColor.GREEN + "Status: " + ChatColor.WHITE + inst.State + " ï¿½aTimeout:ï¿½f " + inst.MoveTimeout);
+			player.sendMessage(ChatColor.GREEN + "Require Mats: " + ChatColor.WHITE + inst.RequireMaterials + " ï¿½aHold Items:ï¿½f " + inst.HoldItems);
 
 			if (inst.State == net.jrbudda.builder.BuilderTrait.BuilderState.building){
 				player.sendMessage(ChatColor.BLUE + "Location: " +ChatColor.WHITE + " x:" + inst.ContinueLoc.getBlockX()+ " y:" + inst.ContinueLoc.getBlockY()+ " z:" + inst.ContinueLoc.getBlockZ());
