@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>net.jrbudda</groupId>
+    <artifactId>builder</artifactId>
+    <packaging>jar</packaging>
+    <name>Builder</name>
+    <version>0.9.1-SNAPSHOT</version>
+
+    <properties>
+        <bukkit.version>1.7.10-R0.1-SNAPSHOT</bukkit.version>
+        <citizens.version>2.0.13-SNAPSHOT</citizens.version>
+        <denizen.version>0.9.5-SNAPSHOT</denizen.version>
+    </properties>
+
+    <build>
+        <finalName>Builder</finalName>
+        <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
+        <resources>
+            <resource>
+                <targetPath>.</targetPath>
+                <filtering>true</filtering>
+                <directory>${basedir}/src/main/resources/</directory>
+                <includes>
+                    <include>*.yml</include>
+                    <include>*.txt</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
+
+    <!-- Repositories -->
+    <repositories>
+        <repository>
+            <id>bukkit-repo</id>
+            <url>http://repo.bukkit.org/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>everything</id>
+            <url>http://repo.citizensnpcs.co</url>
+        </repository>
+        <repository>
+            <id>dynmap-repo</id>
+            <url>http://repo.mikeprimm.com/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.bukkit</groupId>
+            <artifactId>bukkit</artifactId>
+            <version>${bukkit.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.bukkit</groupId>
+            <artifactId>craftbukkit</artifactId>
+            <version>${bukkit.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.citizensnpcs</groupId>
+            <artifactId>citizens</artifactId>
+            <version>${citizens.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.dynmap</groupId>
+            <artifactId>dynmap-api</artifactId>
+            <version>1.9.4</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.aufdemrand</groupId>
+            <artifactId>denizen</artifactId>
+            <version>${denizen.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+
+</project>
